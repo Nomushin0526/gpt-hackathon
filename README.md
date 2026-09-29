@@ -32,10 +32,14 @@
 ```bash
 pip install -r requirements.txt
 export FLASK_APP=campus_events
-flask init-db          # データベース作成(既存データは消えます)
-flask seed-db          # (任意)動作確認用のサンプルイベントを投入
-flask run              # http://127.0.0.1:5000
+flask init-db
+flask seed-db
+flask run
 ```
+
+- `flask init-db`: データベースを作成します(既存データは消えます)
+- `flask seed-db`: (任意)動作確認用のサンプルイベントを投入します
+- `flask run`: http://127.0.0.1:5000 で起動します
 
 学生課の管理画面パスワードは環境変数で設定してください(未設定時は開発用の `admin`)。
 
