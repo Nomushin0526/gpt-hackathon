@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %}相模原キャンパス イベント掲示板</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="{{ url_for('public.index') }}">
+        <span class="brand-mark">📌</span>
+        <span>
+          <strong>相模原キャンパス イベント掲示板</strong>
+          <small>北里大学 相模原キャンパスのイベントをひとまとめに</small>
+        </span>
+      </a>
+      <nav class="nav">
+        <a href="{{ url_for('public.index') }}">イベント一覧</a>
+        <a href="{{ url_for('public.submit') }}">イベントを応募</a>
+        <a href="{{ url_for('public.status') }}">審査状況</a>
+        {% if session.is_admin %}
+          <a href="{{ url_for('admin.dashboard') }}" class="nav-admin">学生課管理</a>
+          <form method="post" action="{{ url_for('admin.logout') }}" class="inline">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button class="link-button">ログアウト</button>
+          </form>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, message in messages %}
+            <li class="flash flash-{{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>学生・団体から応募されたイベントは、学生課が内容を確認したうえで掲載しています。</p>
+      <p><a href="{{ url_for('admin.login') }}">学生課の方はこちら</a></p>
+    </div>
+  </footer>
+</body>
+</html>

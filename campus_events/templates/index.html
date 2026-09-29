@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>キャンパスで開かれるイベントを、見逃さない。</h1>
+  <p>掲示板のポスターでしか告知されていなかったイベントも、学生や部活動が企画したイベントも、ここでまとめてチェックできます。</p>
+  <a class="button" href="{{ url_for('public.submit') }}">＋ 自分たちのイベントを学生課に応募する</a>
+</section>
+
+<form class="filters" method="get">
+  <input type="search" name="q" value="{{ filters.keyword }}" placeholder="キーワード(イベント名・場所・団体名)">
+  <select name="category">
+    <option value="">すべてのカテゴリ</option>
+    {% for c in CATEGORIES %}
+      <option value="{{ c }}" {% if c == filters.category %}selected{% endif %}>{{ c }}</option>
+    {% endfor %}
+  </select>
+  <select name="organizer_type">
+    <option value="">すべての主催者</option>
+    {% for t in ORGANIZER_TYPES %}
+      <option value="{{ t }}" {% if t == filters.organizer_type %}selected{% endif %}>{{ t }}</option>
+    {% endfor %}
+  </select>
+  <select name="period">
+    {% for value, label in [("upcoming", "これから開催"), ("week", "1週間以内"), ("month", "1か月以内"), ("past", "終了したイベント")] %}
+      <option value="{{ value }}" {% if value == filters.period %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button class="button">検索</button>
+</form>
+
+<p class="result-count">{{ events|length }} 件のイベント</p>
+
+{% if events %}
+  <div class="event-list">
+    {% for event in events %}
+      {% include "_event_card.html" %}
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty">
+    <p>条件に合うイベントはありません。</p>
+    <p>イベントを企画している方は <a href="{{ url_for('public.submit') }}">こちらから応募</a> してください。</p>
+  </div>
+{% endif %}
+{% endblock %}

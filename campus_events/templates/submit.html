@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}イベントを応募 | {% endblock %}
+{% block content %}
+<h1>イベントを学生課に応募する</h1>
+<div class="notice">
+  <p>学生個人・部活動・サークルなどが企画したイベントを、学生課に掲載申請できます。</p>
+  <ol>
+    <li>下のフォームに入力して送信すると、<strong>受付番号</strong>が発行されます。</li>
+    <li>学生課が内容を確認し、問題がなければイベント一覧に公開されます。</li>
+    <li>審査状況は <a href="{{ url_for('public.status') }}">審査状況ページ</a> で受付番号を入力して確認できます。</li>
+  </ol>
+  <p class="small">※ 教室・施設の使用許可が必要な場合は、別途学生課で所定の手続きを行ってください。</p>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="form">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  {% with require_contact=True %}{% include "_event_fields.html" %}{% endwith %}
+
+  <fieldset>
+    <legend>学生課への連絡</legend>
+    <label>連絡事項(公開されません)
+      <textarea name="note_to_office" rows="3" maxlength="1000" placeholder="学籍番号・代表者名、施設使用の予定など">{{ form.note_to_office or '' }}</textarea>
+    </label>
+    <label class="checkbox">
+      <input type="checkbox" name="agree" value="1" required>
+      掲載内容に誤りがなく、学内の規則に従ってイベントを実施することに同意します。
+    </label>
+  </fieldset>
+
+  <button class="button">応募する</button>
+</form>
+{% endblock %}

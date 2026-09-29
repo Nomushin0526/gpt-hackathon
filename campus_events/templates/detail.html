@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }} | {% endblock %}
+{% block content %}
+<p><a href="{{ url_for('public.index') }}">← イベント一覧に戻る</a></p>
+<article class="detail">
+  <div class="detail-main">
+    <div class="badges">
+      <span class="badge badge-category">{{ event.category }}</span>
+      <span class="badge badge-{{ event.source }}">{{ SOURCE_LABELS[event.source] }}</span>
+      {% if event.requires_registration %}<span class="badge badge-warn">要申込</span>{% endif %}
+    </div>
+    <h1>{{ event.title }}</h1>
+    <dl class="info">
+      <dt>日時</dt><dd>{{ format_range(event.start_at, event.end_at) }}</dd>
+      <dt>場所</dt><dd>{{ event.location }}</dd>
+      <dt>主催</dt><dd>{{ event.organizer_name }}({{ event.organizer_type }})</dd>
+      {% if event.capacity %}<dt>定員</dt><dd>{{ event.capacity }} 名</dd>{% endif %}
+      {% if event.registration_info %}<dt>申込方法</dt><dd class="pre">{{ event.registration_info }}</dd>{% endif %}
+      {% if event.contact_email %}<dt>問い合わせ</dt><dd><a href="mailto:{{ event.contact_email }}">{{ event.contact_email }}</a></dd>{% endif %}
+    </dl>
+    <div class="description pre">{{ event.description }}</div>
+    <p><a class="button button-secondary" href="{{ url_for('public.ics', event_id=event.id) }}">📅 カレンダーに追加(.ics)</a></p>
+    {% if session.is_admin %}
+      <p><a href="{{ url_for('admin.review', event_id=event.id) }}">管理画面で開く</a></p>
+    {% endif %}
+  </div>
+  {% if event.poster_filename %}
+    <aside class="detail-poster">
+      <a href="{{ url_for('public.poster', filename=event.poster_filename) }}" target="_blank" rel="noopener">
+        <img src="{{ url_for('public.poster', filename=event.poster_filename) }}" alt="{{ event.title }} のポスター">
+      </a>
+    </aside>
+  {% endif %}
+</article>
+{% endblock %}

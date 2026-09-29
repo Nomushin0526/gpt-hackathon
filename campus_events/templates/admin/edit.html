@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ 'イベント編集' if event else 'イベント登録' }} | 学生課管理 | {% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.review', event_id=event.id) if event else url_for('admin.dashboard') }}">← 戻る</a></p>
+<h1>{{ 'イベントを編集' if event else 'イベントを登録' }}</h1>
+{% if not event %}
+  <p class="notice">学生課が登録したイベントは審査なしで即時公開されます。紙で掲示されているポスターは写真を撮ってアップロードすると、学生がスマートフォンからも確認できます。</p>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="form">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  {% with require_contact=False %}{% include "_event_fields.html" %}{% endwith %}
+  {% if event and event.poster_filename %}
+    <div class="current-poster">
+      <img src="{{ url_for('public.poster', filename=event.poster_filename) }}" alt="現在のポスター">
+      <label class="checkbox"><input type="checkbox" name="remove_poster" value="1"> 現在のポスターを削除</label>
+    </div>
+  {% endif %}
+  <button class="button">{{ '更新する' if event else '登録して公開' }}</button>
+</form>
+{% endblock %}

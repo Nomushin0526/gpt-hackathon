@@ -1,0 +1,70 @@
+{# 応募フォームと管理画面の登録フォームで共通の入力項目 #}
+<fieldset>
+  <legend>イベントの内容</legend>
+  <label>イベント名 <span class="req">必須</span>
+    <input name="title" required maxlength="100" value="{{ form.title or '' }}">
+  </label>
+  <label>カテゴリ <span class="req">必須</span>
+    <select name="category" required>
+      <option value="">選択してください</option>
+      {% for c in CATEGORIES %}
+        <option value="{{ c }}" {% if c == form.category %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>イベント内容 <span class="req">必須</span>
+    <textarea name="description" rows="6" required maxlength="4000" placeholder="対象者、内容、持ち物など">{{ form.description or '' }}</textarea>
+  </label>
+  <div class="grid-2">
+    <label>開始日時 <span class="req">必須</span>
+      <input type="datetime-local" name="start_at" required value="{{ form.start_at or '' }}">
+    </label>
+    <label>終了日時
+      <input type="datetime-local" name="end_at" value="{{ form.end_at or '' }}">
+    </label>
+  </div>
+  <label>開催場所 <span class="req">必須</span>
+    <input name="location" required maxlength="100" placeholder="例: ○号館 △△教室、体育館、オンライン" value="{{ form.location or '' }}">
+  </label>
+  <div class="grid-2">
+    <label>定員
+      <input type="number" name="capacity" min="1" value="{{ form.capacity or '' }}">
+    </label>
+    <label class="checkbox">
+      <input type="checkbox" name="requires_registration" value="1" {% if form.requires_registration and form.requires_registration|string != '0' %}checked{% endif %}>
+      事前申込が必要
+    </label>
+  </div>
+  <label>申込方法・参加方法
+    <textarea name="registration_info" rows="2" maxlength="500" placeholder="例: Google フォームから申込、当日参加自由 など">{{ form.registration_info or '' }}</textarea>
+  </label>
+</fieldset>
+
+<fieldset>
+  <legend>主催者</legend>
+  <div class="grid-2">
+    <label>主催者・団体名 <span class="req">必須</span>
+      <input name="organizer_name" required maxlength="100" value="{{ form.organizer_name or '' }}">
+    </label>
+    <label>主催者の種別 <span class="req">必須</span>
+      <select name="organizer_type" required>
+        <option value="">選択してください</option>
+        {% for t in ORGANIZER_TYPES %}
+          <option value="{{ t }}" {% if t == form.organizer_type %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+  <label>連絡先メールアドレス {% if require_contact %}<span class="req">必須</span>{% endif %}
+    <input type="email" name="contact_email" maxlength="200" {% if require_contact %}required{% endif %} value="{{ form.contact_email or '' }}">
+    <small>イベントページに問い合わせ先として表示されます。</small>
+  </label>
+</fieldset>
+
+<fieldset>
+  <legend>ポスター画像</legend>
+  <label>画像ファイル(PNG / JPEG / GIF / WebP、5MBまで)
+    <input type="file" name="poster" accept="image/png,image/jpeg,image/gif,image/webp">
+    <small>紙のポスターがある場合は、写真を撮ってアップロードしてください。</small>
+  </label>
+</fieldset>

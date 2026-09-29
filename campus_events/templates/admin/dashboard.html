@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}学生課管理 | {% endblock %}
+{% block content %}
+<div class="admin-header">
+  <h1>学生課 管理画面</h1>
+  <a class="button" href="{{ url_for('admin.new_event') }}">＋ イベントを登録(紙掲示物の転載など)</a>
+</div>
+
+<nav class="tabs">
+  {% for status, label in STATUS_LABELS.items() %}
+    <a href="{{ url_for('admin.dashboard', tab=status) }}" class="{% if tab == status %}active{% endif %}">
+      {{ label }} <span class="count">{{ counts[status] }}</span>
+    </a>
+  {% endfor %}
+</nav>
+
+{% if events %}
+  <table class="table">
+    <thead>
+      <tr><th>開催日時</th><th>イベント名</th><th>主催</th><th>種別</th><th>受付日</th></tr>
+    </thead>
+    <tbody>
+      {% for e in events %}
+        <tr>
+          <td>{{ e.start_at|dt }}</td>
+          <td><a href="{{ url_for('admin.review', event_id=e.id) }}">{{ e.title }}</a></td>
+          <td>{{ e.organizer_name }}</td>
+          <td><span class="badge badge-{{ e.source }}">{{ SOURCE_LABELS[e.source] }}</span></td>
+          <td>{{ e.created_at|dt(False) }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="empty">該当するイベントはありません。</p>
+{% endif %}
+{% endblock %}

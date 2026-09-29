@@ -1,0 +1,17 @@
+<a class="event-card" href="{{ url_for('public.detail', event_id=event.id) }}">
+  <div class="event-date">
+    {% set d = event.start_at %}
+    <span class="event-month">{{ d[5:7]|int }}月</span>
+    <span class="event-day">{{ d[8:10]|int }}</span>
+  </div>
+  <div class="event-body">
+    <div class="badges">
+      <span class="badge badge-category">{{ event.category }}</span>
+      <span class="badge badge-{{ event.source }}">{{ SOURCE_LABELS[event.source] }}</span>
+      {% if event.requires_registration %}<span class="badge badge-warn">要申込</span>{% endif %}
+    </div>
+    <h3>{{ event.title }}</h3>
+    <p class="meta">🕒 {{ format_range(event.start_at, event.end_at) }}</p>
+    <p class="meta">📍 {{ event.location }}　👥 {{ event.organizer_name }}</p>
+  </div>
+</a>

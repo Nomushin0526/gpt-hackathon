@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}審査状況 | {% endblock %}
+{% block content %}
+<h1>審査状況の確認</h1>
+<form method="get" class="filters">
+  <input name="code" value="{{ code }}" placeholder="受付番号(8文字)" required autocomplete="off">
+  <button class="button">確認</button>
+</form>
+
+{% if event %}
+  <div class="card">
+    <p>受付番号 <strong>{{ event.receipt_code }}</strong></p>
+    <h2>{{ event.title }}</h2>
+    <p>開催日時: {{ format_range(event.start_at, event.end_at) }}</p>
+    <p>ステータス: <span class="status status-{{ event.status }}">{{ STATUS_LABELS[event.status] }}</span></p>
+    {% if event.status == "pending" %}
+      <p>学生課で内容を確認しています。しばらくお待ちください。</p>
+    {% elif event.status == "approved" %}
+      <p>イベント一覧に公開されています。<a href="{{ url_for('public.detail', event_id=event.id) }}">公開ページを見る</a></p>
+    {% else %}
+      <p>内容に修正が必要です。学生課からのコメントを確認し、修正のうえ再度応募してください。</p>
+    {% endif %}
+    {% if event.review_comment %}
+      <div class="comment">
+        <strong>学生課からのコメント</strong>
+        <p class="pre">{{ event.review_comment }}</p>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}応募を受け付けました | {% endblock %}
+{% block content %}
+<div class="card center">
+  <h1>応募を受け付けました</h1>
+  <p>「{{ event.title }}」の掲載申請を学生課に送信しました。</p>
+  <p>あなたの受付番号</p>
+  <p class="receipt">{{ event.receipt_code }}</p>
+  <p class="small">審査状況の確認に必要です。スクリーンショットなどで控えておいてください。</p>
+  <p><a class="button" href="{{ url_for('public.status', code=event.receipt_code) }}">審査状況を確認する</a></p>
+</div>
+{% endblock %}

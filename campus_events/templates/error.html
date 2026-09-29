@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card center">
+  <h1>{{ message }}</h1>
+  <p><a href="{{ url_for('public.index') }}">イベント一覧に戻る</a></p>
+</div>
+{% endblock %}

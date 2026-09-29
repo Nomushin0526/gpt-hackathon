@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}学生課ログイン | {% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>学生課ログイン</h1>
+  <form method="post" class="form">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <label>パスワード
+      <input type="password" name="password" required autofocus>
+    </label>
+    <button class="button">ログイン</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }} | 学生課管理 | {% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.dashboard', tab=event.status) }}">← 管理画面に戻る</a></p>
+<article class="detail">
+  <div class="detail-main">
+    <div class="badges">
+      <span class="status status-{{ event.status }}">{{ STATUS_LABELS[event.status] }}</span>
+      <span class="badge badge-{{ event.source }}">{{ SOURCE_LABELS[event.source] }}</span>
+      <span class="badge badge-category">{{ event.category }}</span>
+    </div>
+    <h1>{{ event.title }}</h1>
+    <dl class="info">
+      <dt>受付番号</dt><dd>{{ event.receipt_code }}</dd>
+      <dt>日時</dt><dd>{{ format_range(event.start_at, event.end_at) }}</dd>
+      <dt>場所</dt><dd>{{ event.location }}</dd>
+      <dt>主催</dt><dd>{{ event.organizer_name }}({{ event.organizer_type }})</dd>
+      <dt>連絡先</dt><dd>{{ event.contact_email or '—' }}</dd>
+      <dt>定員</dt><dd>{{ event.capacity ~ ' 名' if event.capacity else '—' }}</dd>
+      <dt>事前申込</dt><dd>{{ '必要' if event.requires_registration else '不要' }}</dd>
+      <dt>申込方法</dt><dd class="pre">{{ event.registration_info or '—' }}</dd>
+      <dt>受付日時</dt><dd>{{ event.created_at|dt }}</dd>
+    </dl>
+    <div class="description pre">{{ event.description }}</div>
+    {% if event.note_to_office %}
+      <div class="comment">
+        <strong>応募者からの連絡事項(非公開)</strong>
+        <p class="pre">{{ event.note_to_office }}</p>
+      </div>
+    {% endif %}
+  </div>
+  {% if event.poster_filename %}
+    <aside class="detail-poster">
+      <img src="{{ url_for('public.poster', filename=event.poster_filename) }}" alt="ポスター">
+    </aside>
+  {% endif %}
+</article>
+
+<section class="card">
+  <h2>審査</h2>
+  <form method="post" action="{{ url_for('admin.change_status', event_id=event.id) }}" class="form">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <label>応募者へのコメント(受付番号で確認できます。差し戻し時は必須)
+      <textarea name="review_comment" rows="3">{{ event.review_comment or '' }}</textarea>
+    </label>
+    <div class="actions">
+      <button class="button" name="status" value="approved">承認して公開</button>
+      <button class="button button-danger" name="status" value="rejected">差し戻す</button>
+      <button class="button button-secondary" name="status" value="pending">審査待ちに戻す</button>
+    </div>
+  </form>
+</section>
+
+<div class="actions">
+  <a class="button button-secondary" href="{{ url_for('admin.edit_event', event_id=event.id) }}">内容を編集</a>
+  {% if event.status == "approved" %}
+    <a class="button button-secondary" href="{{ url_for('public.detail', event_id=event.id) }}">公開ページを見る</a>
+  {% endif %}
+  <form method="post" action="{{ url_for('admin.delete_event', event_id=event.id) }}" class="inline"
+        onsubmit="return confirm('このイベントを削除します。よろしいですか?');">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <button class="button button-danger">削除</button>
+  </form>
+</div>
+{% endblock %}
