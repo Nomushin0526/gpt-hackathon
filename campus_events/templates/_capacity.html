@@ -1,0 +1,19 @@
+{# 定員と申込人数。サイト申込のイベントは static/app.js が定期的に最新の人数へ更新する #}
+{% if event.registration_mode == "site" %}
+  {% set pct = [100, (event.registered * 100 // event.capacity) if event.capacity else 0]|min %}
+  <div class="capacity js-capacity{% if event.capacity and pct >= 80 %} is-few{% endif %}{% if is_full(event) %} is-full{% endif %}"
+       data-event-id="{{ event.id }}">
+    <div class="capacity-text">
+      申込 <strong class="js-registered">{{ event.registered }}</strong> 名
+      {% if event.capacity %}
+        / 定員 {{ event.capacity }} 名
+        <span class="capacity-left js-left">{% if is_full(event) %}満員{% else %}残り {{ event.capacity - event.registered }} 名{% endif %}</span>
+      {% endif %}
+    </div>
+    {% if event.capacity %}
+      <div class="bar"><span class="js-bar" style="width: {{ pct }}%"></span></div>
+    {% endif %}
+  </div>
+{% elif event.capacity %}
+  <div class="capacity"><div class="capacity-text">定員 {{ event.capacity }} 名</div></div>
+{% endif %}

@@ -24,19 +24,37 @@
     </label>
   </div>
   <label>開催場所 <span class="req">必須</span>
-    <input name="location" required maxlength="100" placeholder="例: ○号館 △△教室、体育館、オンライン" value="{{ form.location or '' }}">
+    <input name="location" required maxlength="100" list="campus-locations"
+           placeholder="例: L1号館 6階 大講義室" value="{{ form.location or '' }}">
+    <small>候補から建物を選び、教室名などを書き足してください。「図書館」ではなく「北里大学中央図書館」のように正式名称で入力してください。</small>
   </label>
-  <div class="grid-2">
-    <label>定員
-      <input type="number" name="capacity" min="1" value="{{ form.capacity or '' }}">
-    </label>
-    <label class="checkbox">
-      <input type="checkbox" name="requires_registration" value="1" {% if form.requires_registration and form.requires_registration|string != '0' %}checked{% endif %}>
-      事前申込が必要
-    </label>
+  <datalist id="campus-locations">
+    {% for loc in CAMPUS_LOCATIONS %}<option value="{{ loc }}">{% endfor %}
+  </datalist>
+</fieldset>
+
+{% set mode = form.registration_mode or "none" %}
+<fieldset class="js-registration-fields">
+  <legend>参加方法</legend>
+  <div class="mode-options">
+    {% for value, label in REGISTRATION_MODES.items() %}
+      <label class="mode-option">
+        <input type="radio" name="registration_mode" value="{{ value }}" {% if value == mode %}checked{% endif %}>
+        <span>
+          <strong>{{ label }}</strong>
+          {% if value == "none" %}<small>一覧に「申込不要」と表示されます。</small>
+          {% elif value == "site" %}<small>一覧に「要申込」と表示され、申込人数がリアルタイムで表示されます。定員に達すると自動で締め切ります。</small>
+          {% else %}<small>一覧に「要申込」と表示されます。Google フォームの URL などを下に入力してください。</small>{% endif %}
+        </span>
+      </label>
+    {% endfor %}
   </div>
-  <label>申込方法・参加方法
-    <textarea name="registration_info" rows="2" maxlength="500" placeholder="例: Google フォームから申込、当日参加自由 など">{{ form.registration_info or '' }}</textarea>
+  <label>定員
+    <input type="number" name="capacity" min="1" value="{{ form.capacity or '' }}" placeholder="制限なしの場合は空欄">
+  </label>
+  <label class="js-registration-info">申込方法・申込先 <span class="req js-info-required"{% if mode != "external" %} hidden{% endif %}>必須</span>
+    <textarea name="registration_info" rows="2" maxlength="500"
+              placeholder="例: Google フォーム https://forms.gle/... から申込(締切 10/20)">{{ form.registration_info or '' }}</textarea>
   </label>
 </fieldset>
 

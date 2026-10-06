@@ -1,8 +1,8 @@
 """学生向け画面: イベント一覧・詳細・応募・審査状況の確認。"""
 
 from flask import (
-    Blueprint, Response, abort, current_app, flash, redirect, render_template,
-    request, send_from_directory, url_for,
+    Blueprint, Response, abort, current_app, flash, jsonify, redirect,
+    render_template, request, send_from_directory, url_for,
 )
 
 from . import events
@@ -24,19 +24,50 @@ def index():
     return render_template("index.html", events=results, filters=filters)
 
 
-@bp.route("/events/<int:event_id>")
-def detail(event_id):
+def _public_event_or_404(event_id):
     event = events.get_event(event_id)
     if event is None or event["status"] != "approved":
         abort(404)
-    return render_template("detail.html", event=event)
+    return event
+
+
+@bp.route("/events/<int:event_id>")
+def detail(event_id):
+    return render_template("detail.html", event=_public_event_or_404(event_id), form={})
+
+
+@bp.route("/events/<int:event_id>/register", methods=["POST"])
+def register(event_id):
+    event = _public_event_or_404(event_id)
+    if not events.is_open_for_registration(event):
+        flash("このイベントはこのサイトでの参加申込を受け付けていません。", "error")
+        return redirect(url_for("public.detail", event_id=event_id))
+    data, errors = events.validate_registration_form(request.form)
+    if not errors:
+        try:
+            events.register(event_id, data)
+        except events.RegistrationError as e:
+            errors.append(str(e))
+    if errors:
+        for e in errors:
+            flash(e, "error")
+        return render_template(
+            "detail.html", event=events.get_event(event_id), form=request.form
+        ), 400
+    flash(f"「{event['title']}」への参加申込を受け付けました。", "info")
+    return redirect(url_for("public.detail", event_id=event_id))
+
+
+@bp.route("/api/registration-counts")
+def registration_counts():
+    """一覧・詳細ページの申込人数をリアルタイム更新するための API。"""
+    ids = [int(i) for i in request.args.get("ids", "").split(",") if i.isdigit()][:100]
+    return jsonify(events.registration_counts(ids))
 
 
 @bp.route("/events/<int:event_id>/calendar.ics")
 def ics(event_id):
-    event = events.get_event(event_id)
-    if event is None or event["status"] != "approved":
-        abort(404)
+    event = _public_event_or_404(event_id)
     return Response(
         events.to_ics(event),
         mimetype="text/calendar",

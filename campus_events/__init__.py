@@ -4,7 +4,10 @@ import secrets
 from flask import Flask, abort, request, session
 
 from . import db
-from .events import CATEGORIES, ORGANIZER_TYPES, SOURCE_LABELS, STATUS_LABELS, parse_dt
+from .events import (
+    CAMPUS_LOCATIONS, CATEGORIES, ORGANIZER_TYPES, REGISTRATION_MODES, SOURCE_LABELS,
+    STATUS_LABELS, is_full, is_open_for_registration, parse_dt,
+)
 
 WEEKDAYS = "月火水木金土日"
 
@@ -62,6 +65,10 @@ def create_app(test_config=None):
         ORGANIZER_TYPES=ORGANIZER_TYPES,
         STATUS_LABELS=STATUS_LABELS,
         SOURCE_LABELS=SOURCE_LABELS,
+        REGISTRATION_MODES=REGISTRATION_MODES,
+        CAMPUS_LOCATIONS=CAMPUS_LOCATIONS,
+        is_full=is_full,
+        is_open_for_registration=is_open_for_registration,
     )
 
     from . import admin, public

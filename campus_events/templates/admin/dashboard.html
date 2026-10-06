@@ -17,7 +17,7 @@
 {% if events %}
   <table class="table">
     <thead>
-      <tr><th>開催日時</th><th>イベント名</th><th>主催</th><th>種別</th><th>受付日</th></tr>
+      <tr><th>開催日時</th><th>イベント名</th><th>主催</th><th>種別</th><th>申込数</th><th>受付日</th></tr>
     </thead>
     <tbody>
       {% for e in events %}
@@ -26,6 +26,7 @@
           <td><a href="{{ url_for('admin.review', event_id=e.id) }}">{{ e.title }}</a></td>
           <td>{{ e.organizer_name }}</td>
           <td><span class="badge badge-{{ e.source }}">{{ SOURCE_LABELS[e.source] }}</span></td>
+          <td>{% if e.registration_mode == "site" %}{{ e.registered }}{% if e.capacity %} / {{ e.capacity }}{% endif %}{% else %}—{% endif %}</td>
           <td>{{ e.created_at|dt(False) }}</td>
         </tr>
       {% endfor %}

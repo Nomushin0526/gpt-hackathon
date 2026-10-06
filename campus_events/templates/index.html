@@ -7,7 +7,7 @@
 </section>
 
 <form class="filters" method="get">
-  <input type="search" name="q" value="{{ filters.keyword }}" placeholder="キーワード(イベント名・場所・団体名)">
+  <input type="search" name="q" class="filter-keyword" value="{{ filters.keyword }}" placeholder="キーワードで検索(イベント名・場所・団体名)">
   <select name="category">
     <option value="">すべてのカテゴリ</option>
     {% for c in CATEGORIES %}

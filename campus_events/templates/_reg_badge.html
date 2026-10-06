@@ -1,0 +1,10 @@
+{# 参加方法のバッジ。要申込は目立つように表示する #}
+{% if event.registration_mode in ("site", "external") %}
+  {% if event.registration_mode == "site" and is_full(event) %}
+    <span class="reg-badge reg-full js-full-badge" data-event-id="{{ event.id }}">満員</span>
+  {% else %}
+    <span class="reg-badge reg-required js-full-badge" data-event-id="{{ event.id }}">✍ 要申込</span>
+  {% endif %}
+{% else %}
+  <span class="reg-badge reg-free">申込不要</span>
+{% endif %}

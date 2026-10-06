@@ -192,3 +192,121 @@ def test_login_next_does_not_redirect_offsite(client):
     res = client.post("/admin/login?next=https://evil.example",
                       data={"password": "secret", "_csrf_token": token})
     assert res.headers["Location"] == "/admin/"
+
+
+def create_site_event(client, **overrides):
+    """ログイン済みのクライアントで、サイト申込のイベントを公開する。"""
+    data = event_form(registration_mode="site", **overrides)
+    data["_csrf_token"] = csrf(client, "/admin/events/new")
+    res = client.post("/admin/events/new", data=data)
+    assert res.status_code == 302
+    return int(res.headers["Location"].rsplit("/", 1)[-1])
+
+
+def apply(client, event_id, email, name="北里 太郎"):
+    token = csrf(client, f"/events/{event_id}")
+    return client.post(f"/events/{event_id}/register",
+                       data={"name": name, "email": email, "_csrf_token": token})
+
+
+def test_registration_counts_and_capacity(client):
+    login(client)
+    event_id = create_site_event(client, capacity="2")
+    page = client.get("/").get_data(as_text=True)
+    assert "要申込" in page and "定員 2 名" in page
+
+    assert apply(client, event_id, "a@example.com").status_code == 302
+    assert client.get("/api/registration-counts?ids=1").get_json() == {
+        "1": {"registered": 1, "capacity": 2, "full": False}
+    }
+
+    dup = apply(client, event_id, "A@example.com")
+    assert dup.status_code == 400 and "すでに申込済み" in dup.get_data(as_text=True)
+
+    assert apply(client, event_id, "b@example.com").status_code == 302
+    assert client.get("/api/registration-counts?ids=1").get_json()["1"]["full"] is True
+    assert "満員" in client.get("/").get_data(as_text=True)
+
+    full = apply(client, event_id, "c@example.com")
+    assert full.status_code == 400 and "定員に達した" in full.get_data(as_text=True)
+
+    csv_body = client.get(f"/admin/events/{event_id}/registrations.csv").get_data(as_text=True)
+    assert "a@example.com" in csv_body and "b@example.com" in csv_body
+
+
+def test_registration_rejected_for_non_site_events(client):
+    login(client)
+    data = event_form(registration_mode="none")
+    data["_csrf_token"] = csrf(client, "/admin/events/new")
+    client.post("/admin/events/new", data=data)
+    res = apply(client, 1, "a@example.com")
+    assert res.status_code == 302
+    assert client.get("/api/registration-counts?ids=1").get_json()["1"]["registered"] == 0
+
+
+def test_registration_closed_after_event_starts(client):
+    login(client)
+    start = now_jst() - timedelta(minutes=10)
+    event_id = create_site_event(client, start_at=fmt(start), end_at=fmt(start + timedelta(hours=2)))
+    apply(client, event_id, "a@example.com")
+    assert client.get("/api/registration-counts?ids=1").get_json()["1"]["registered"] == 0
+
+
+def test_external_registration_requires_info(client):
+    res = submit(client, registration_mode="external", registration_info="")
+    assert res.status_code == 400
+    assert "申込方法・申込先" in res.get_data(as_text=True)
+    assert submit(client, registration_mode="external", registration_info="https://forms.gle/x").status_code == 302
+
+
+def test_admin_can_cancel_registration(client):
+    login(client)
+    event_id = create_site_event(client)
+    apply(client, event_id, "a@example.com")
+    token = csrf(client, f"/admin/events/{event_id}")
+    client.post("/admin/registrations/1/delete", data={"event_id": event_id, "_csrf_token": token})
+    assert client.get("/api/registration-counts?ids=1").get_json()["1"]["registered"] == 0
+
+
+def test_migrates_database_from_previous_version(tmp_path):
+    import sqlite3
+
+    path = tmp_path / "old.sqlite"
+    conn = sqlite3.connect(path)
+    conn.executescript("""
+        CREATE TABLE events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT NOT NULL,
+            category TEXT NOT NULL, start_at TEXT NOT NULL, end_at TEXT, location TEXT NOT NULL,
+            organizer_name TEXT NOT NULL, organizer_type TEXT NOT NULL, contact_email TEXT,
+            capacity INTEGER, requires_registration INTEGER NOT NULL DEFAULT 0,
+            registration_info TEXT, note_to_office TEXT, poster_filename TEXT,
+            source TEXT NOT NULL DEFAULT 'student', status TEXT NOT NULL DEFAULT 'pending',
+            review_comment TEXT, receipt_code TEXT UNIQUE, created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL);
+        INSERT INTO events (title, description, category, start_at, location, organizer_name,
+            organizer_type, requires_registration, status, created_at, updated_at)
+        VALUES ('旧イベント', '説明', 'その他', '2099-01-01T10:00', '学生ホール', '学生課',
+            '学生課・大学', 1, 'approved', '2026-01-01T00:00', '2026-01-01T00:00');
+    """)
+    conn.commit()
+    conn.close()
+
+    app = create_app({"TESTING": True, "DATABASE": str(path), "UPLOAD_FOLDER": str(tmp_path)})
+    page = app.test_client().get("/").get_data(as_text=True)
+    assert "旧イベント" in page and "要申込" in page
+
+
+def test_database_is_created_automatically(tmp_path):
+    app = create_app({"TESTING": True, "DATABASE": str(tmp_path / "new.sqlite"),
+                      "UPLOAD_FOLDER": str(tmp_path)})
+    assert app.test_client().get("/").status_code == 200
+
+
+def test_seed_data_uses_registration_modes(app):
+    from campus_events.seed import seed
+
+    with app.app_context():
+        seed()
+    page = app.test_client().get("/").get_data(as_text=True)
+    assert "L1号館 6階 大講義室" in page and "北里大学中央図書館" in page
+    assert "申込 <strong" in page

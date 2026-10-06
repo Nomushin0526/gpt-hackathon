@@ -61,7 +61,8 @@ main.container { padding-top: 24px; padding-bottom: 48px; min-height: 70vh; }
 
 /* filters */
 .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-.filters input, .filters select { flex: 1 1 180px; }
+.filters input, .filters select { flex: 1 1 180px; min-width: 0; }
+.filters .filter-keyword { flex-basis: 100%; }
 input, select, textarea { width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; font: inherit; background: var(--surface); }
 input:focus, select:focus, textarea:focus { outline: 2px solid #99f6e4; border-color: var(--primary); }
 .result-count { color: var(--muted); font-size: 14px; }
@@ -81,7 +82,6 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #99f6e4; border-c
 .badge, .status { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #eef2f4; color: var(--muted); }
 .badge-office { background: var(--office-bg); color: var(--office-text); }
 .badge-student { background: var(--student-bg); color: var(--student-text); }
-.badge-warn { background: var(--warn-bg); color: var(--warn-text); }
 .status-pending { background: var(--warn-bg); color: var(--warn-text); }
 .status-approved { background: #dcfce7; color: #166534; }
 .status-rejected { background: #fee4e2; color: var(--danger); }
@@ -101,13 +101,14 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #99f6e4; border-c
 .form { display: grid; gap: 16px; }
 fieldset { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 16px; margin: 0; display: grid; gap: 12px; min-width: 0; }
 legend { font-weight: 800; padding: 0 6px; }
-label { display: grid; gap: 4px; font-weight: 600; font-size: 14px; }
-label small { color: var(--muted); font-weight: 400; }
+label { display: block; font-weight: 600; font-size: 14px; }
+label > input, label > select, label > textarea { display: block; margin-top: 4px; }
+label small { display: block; margin-top: 4px; color: var(--muted); font-weight: 400; }
 label.checkbox { display: flex; align-items: center; gap: 8px; font-weight: 400; }
-label.checkbox input { width: auto; }
+label.checkbox input { width: auto; margin: 0; }
 .grid-2 { display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media (min-width: 640px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
-.req { font-size: 11px; color: #fff; background: var(--danger); padding: 0 6px; border-radius: 4px; margin-left: 4px; }
+.req { display: inline-block; vertical-align: middle; font-size: 11px; color: #fff; background: var(--danger); padding: 0 6px; border-radius: 4px; margin-left: 4px; }
 
 .notice { background: var(--surface); border-left: 4px solid var(--primary); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
 .small { font-size: 13px; color: var(--muted); }
@@ -136,3 +137,32 @@ label.checkbox input { width: auto; }
 .table th, .table td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
 .table th { background: #f1f5f4; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* 参加方法バッジ: 要申込は目立たせる */
+.reg-badge { display: inline-flex; align-items: center; font-size: 12px; font-weight: 800; padding: 2px 10px; border-radius: 6px; }
+.reg-required { background: #ea580c; color: #fff; box-shadow: 0 1px 0 rgba(0,0,0,.15); }
+.reg-full { background: var(--danger); color: #fff; }
+.reg-free { background: #eef2f4; color: var(--muted); font-weight: 700; }
+
+/* 定員・申込人数 */
+.capacity { margin-top: 8px; font-size: 13px; }
+.capacity-text { color: var(--text); }
+.capacity-text strong { font-size: 16px; color: var(--primary-dark); }
+.capacity-left { margin-left: 6px; font-weight: 700; color: var(--primary-dark); }
+.bar { height: 6px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin-top: 4px; }
+.bar span { display: block; height: 100%; background: var(--primary); transition: width .4s; }
+.capacity.is-few .capacity-left, .capacity.is-few strong { color: #c2410c; }
+.capacity.is-few .bar span { background: #ea580c; }
+.capacity.is-full .capacity-left, .capacity.is-full strong { color: var(--danger); }
+.capacity.is-full .bar span { background: var(--danger); }
+.registration h2 { margin-top: 0; }
+.registration .capacity { font-size: 15px; margin-bottom: 12px; }
+.full-message { color: var(--danger); font-weight: 700; }
+
+/* 参加方法の選択 */
+.mode-options { display: grid; gap: 8px; }
+.mode-option { display: flex; align-items: flex-start; gap: 10px; font-weight: 400; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+.mode-option input { width: auto; margin-top: 5px; }
+.mode-option strong { display: block; }
+.mode-option:has(input:checked) { border-color: var(--primary); background: #f0fdfa; }
+.link-button.danger { color: var(--danger); font-weight: 700; }

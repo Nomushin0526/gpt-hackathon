@@ -17,7 +17,7 @@
       <dt>主催</dt><dd>{{ event.organizer_name }}({{ event.organizer_type }})</dd>
       <dt>連絡先</dt><dd>{{ event.contact_email or '—' }}</dd>
       <dt>定員</dt><dd>{{ event.capacity ~ ' 名' if event.capacity else '—' }}</dd>
-      <dt>事前申込</dt><dd>{{ '必要' if event.requires_registration else '不要' }}</dd>
+      <dt>参加方法</dt><dd>{{ REGISTRATION_MODES[event.registration_mode] }}</dd>
       <dt>申込方法</dt><dd class="pre">{{ event.registration_info or '—' }}</dd>
       <dt>受付日時</dt><dd>{{ event.created_at|dt }}</dd>
     </dl>
@@ -35,6 +35,43 @@
     </aside>
   {% endif %}
 </article>
+
+{% if event.registration_mode == "site" or registrations %}
+<section class="card">
+  <div class="admin-header">
+    <h2>参加申込者({{ registrations|length }} 名{% if event.capacity %} / 定員 {{ event.capacity }} 名{% endif %})</h2>
+    {% if registrations %}
+      <a class="button button-secondary" href="{{ url_for('admin.registrations_csv', event_id=event.id) }}">CSV ダウンロード</a>
+    {% endif %}
+  </div>
+  {% if registrations %}
+    <table class="table">
+      <thead><tr><th>No.</th><th>氏名</th><th>学籍番号</th><th>メールアドレス</th><th>申込日時</th><th></th></tr></thead>
+      <tbody>
+        {% for r in registrations %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ r.name }}</td>
+            <td>{{ r.student_number or '—' }}</td>
+            <td>{{ r.email }}</td>
+            <td>{{ r.created_at|dt }}</td>
+            <td>
+              <form method="post" action="{{ url_for('admin.delete_registration', registration_id=r.id) }}" class="inline"
+                    onsubmit="return confirm('この申込を取り消します。よろしいですか?');">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="event_id" value="{{ event.id }}">
+                <button class="link-button danger">取消</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="small">まだ申込はありません。</p>
+  {% endif %}
+</section>
+{% endif %}
 
 <section class="card">
   <h2>審査</h2>

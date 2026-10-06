@@ -6,12 +6,14 @@
   </div>
   <div class="event-body">
     <div class="badges">
+      {% include "_reg_badge.html" %}
       <span class="badge badge-category">{{ event.category }}</span>
       <span class="badge badge-{{ event.source }}">{{ SOURCE_LABELS[event.source] }}</span>
-      {% if event.requires_registration %}<span class="badge badge-warn">要申込</span>{% endif %}
     </div>
     <h3>{{ event.title }}</h3>
     <p class="meta">🕒 {{ format_range(event.start_at, event.end_at) }}</p>
-    <p class="meta">📍 {{ event.location }}　👥 {{ event.organizer_name }}</p>
+    <p class="meta">📍 {{ event.location }}</p>
+    <p class="meta">👥 {{ event.organizer_name }}</p>
+    {% include "_capacity.html" %}
   </div>
 </a>

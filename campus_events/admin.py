@@ -1,11 +1,13 @@
 """学生課向け管理画面: 応募の審査、イベントの登録(紙掲示物の転載)・編集・削除。"""
 
+import csv
 import functools
 import hmac
+import io
 
 from flask import (
-    Blueprint, abort, current_app, flash, redirect, render_template, request,
-    session, url_for,
+    Blueprint, Response, abort, current_app, flash, redirect, render_template,
+    request, session, url_for,
 )
 
 from . import events
@@ -63,7 +65,35 @@ def dashboard():
 @login_required
 def review(event_id):
     event = events.get_event(event_id) or abort(404)
-    return render_template("admin/review.html", event=event)
+    return render_template(
+        "admin/review.html", event=event, registrations=events.list_registrations(event_id)
+    )
+
+
+@bp.route("/events/<int:event_id>/registrations.csv")
+@login_required
+def registrations_csv(event_id):
+    event = events.get_event(event_id) or abort(404)
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["No.", "氏名", "学籍番号", "メールアドレス", "申込日時"])
+    for i, r in enumerate(events.list_registrations(event_id), 1):
+        writer.writerow([i, r["name"], r["student_number"] or "", r["email"], r["created_at"].replace("T", " ")])
+    # Excel で文字化けしないよう BOM 付き UTF-8 で出力する
+    return Response(
+        "\ufeff" + buf.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=registrations-{event['id']}.csv"},
+    )
+
+
+@bp.route("/registrations/<int:registration_id>/delete", methods=["POST"])
+@login_required
+def delete_registration(registration_id):
+    event_id = request.form.get("event_id", type=int)
+    events.delete_registration(registration_id)
+    flash("参加申込を取り消しました。", "info")
+    return redirect(url_for("admin.review", event_id=event_id) if event_id else url_for("admin.dashboard"))
 
 
 @bp.route("/events/<int:event_id>/status", methods=["POST"])

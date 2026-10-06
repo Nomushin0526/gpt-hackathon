@@ -5,17 +5,17 @@
 <article class="detail">
   <div class="detail-main">
     <div class="badges">
+      {% include "_reg_badge.html" %}
       <span class="badge badge-category">{{ event.category }}</span>
       <span class="badge badge-{{ event.source }}">{{ SOURCE_LABELS[event.source] }}</span>
-      {% if event.requires_registration %}<span class="badge badge-warn">要申込</span>{% endif %}
     </div>
     <h1>{{ event.title }}</h1>
     <dl class="info">
       <dt>日時</dt><dd>{{ format_range(event.start_at, event.end_at) }}</dd>
       <dt>場所</dt><dd>{{ event.location }}</dd>
       <dt>主催</dt><dd>{{ event.organizer_name }}({{ event.organizer_type }})</dd>
+      <dt>参加方法</dt><dd>{{ REGISTRATION_MODES[event.registration_mode] }}</dd>
       {% if event.capacity %}<dt>定員</dt><dd>{{ event.capacity }} 名</dd>{% endif %}
-      {% if event.registration_info %}<dt>申込方法</dt><dd class="pre">{{ event.registration_info }}</dd>{% endif %}
       {% if event.contact_email %}<dt>問い合わせ</dt><dd><a href="mailto:{{ event.contact_email }}">{{ event.contact_email }}</a></dd>{% endif %}
     </dl>
     <div class="description pre">{{ event.description }}</div>
@@ -32,4 +32,41 @@
     </aside>
   {% endif %}
 </article>
+
+<section class="card registration" id="register">
+  <h2>参加申込</h2>
+  {% if event.registration_mode == "none" %}
+    <p>申込は不要です。当日、直接会場へお越しください。</p>
+    {% include "_capacity.html" %}
+  {% elif event.registration_mode == "external" %}
+    <p><strong>このイベントは事前申込が必要です。</strong>下記の方法でお申し込みください。</p>
+    <div class="comment pre">{{ event.registration_info }}</div>
+    {% include "_capacity.html" %}
+  {% else %}
+    {% include "_capacity.html" %}
+    {% if event.registration_info %}<p class="pre">{{ event.registration_info }}</p>{% endif %}
+    {% if not is_open_for_registration(event) %}
+      <p class="small">申込受付は終了しました。</p>
+    {% elif is_full(event) %}
+      <p class="full-message">定員に達したため、申込を締め切りました。</p>
+    {% else %}
+      <form method="post" action="{{ url_for('public.register', event_id=event.id) }}" class="form js-register-form" data-event-id="{{ event.id }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="grid-2">
+          <label>氏名 <span class="req">必須</span>
+            <input name="name" required maxlength="50" value="{{ form.name or '' }}" autocomplete="name">
+          </label>
+          <label>学籍番号
+            <input name="student_number" maxlength="20" value="{{ form.student_number or '' }}">
+          </label>
+        </div>
+        <label>メールアドレス <span class="req">必須</span>
+          <input type="email" name="email" required maxlength="200" value="{{ form.email or '' }}" autocomplete="email">
+          <small>主催者からの連絡に使われます。氏名・メールアドレスは公開されません。</small>
+        </label>
+        <button class="button">このイベントに申し込む</button>
+      </form>
+    {% endif %}
+  {% endif %}
+</section>
 {% endblock %}
