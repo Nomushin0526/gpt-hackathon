@@ -1,11 +1,13 @@
 import io
 import re
 from datetime import timedelta
+from urllib.parse import quote
 
 import pytest
 
 from campus_events import create_app
 from campus_events.db import init_db
+from campus_events import places
 from campus_events.events import DATETIME_FORMAT, now_jst
 
 
@@ -17,6 +19,7 @@ def app(tmp_path):
         "UPLOAD_FOLDER": str(tmp_path),
         "ADMIN_PASSWORD": "secret",
         "SECRET_KEY": "test",
+        "PLACE_SEARCH_URL": "",
     })
     with app.app_context():
         init_db()
@@ -310,3 +313,108 @@ def test_seed_data_uses_registration_modes(app):
     page = app.test_client().get("/").get_data(as_text=True)
     assert "L1号館 6階 大講義室" in page and "北里大学中央図書館" in page
     assert "申込 <strong" in page
+
+
+def test_campus_place_matching(app):
+    with app.app_context():
+        assert places.find_campus_place("L1号館 6階 大講義室")["name"] == "L1号館(一般教育棟)"
+        assert places.find_campus_place("Ｌ１号館")["name"] == "L1号館(一般教育棟)"  # 全角でも一致
+        assert places.find_campus_place("IPE棟図書館")["name"] == "IPE棟図書館"  # より長い名前を優先
+        assert places.find_campus_place("相模原市民会館") is None
+        assert places.map_info("オンライン") is None
+        assert places.map_info("Zoom(URL は申込者に連絡)") is None
+
+
+def test_pin_to_latlng_inverts_campus_map_projection():
+    for p in places.CAMPUS_PLACES:
+        if p["lat"] is not None and p["name"] not in ("第一総合グラウンド",):
+            lat, lng = places._pin_to_latlng(*p["pin"])
+            assert abs(lat - p["lat"]) < 0.0003 and abs(lng - p["lng"]) < 0.0003, p["name"]
+
+
+def add_event(client, **overrides):
+    data = event_form(organizer_type="学生課・大学", contact_email="", **overrides)
+    data["_csrf_token"] = csrf(client, "/admin/events/new")
+    return client.post("/admin/events/new", data=data)
+
+
+def test_campus_event_shows_campus_map_pin_and_google_map(client):
+    login(client)
+    add_event(client, location="L1号館 6階 大講義室", location_lat="1", location_lng="2")
+    page = client.get("/events/1").get_data(as_text=True)
+    assert "campus_map.webp" in page
+    assert 'class="campus-pin is-active"' in page and "L1号館(一般教育棟)" in page
+    # 学内施設は登録された施設の位置を使う(送られた緯度経度は無視する)
+    assert "q=35.540359%2C139.394931" in page
+
+
+def test_campus_place_without_pin_shows_only_google_map(client):
+    login(client)
+    add_event(client, location="S号館 101教室")
+    page = client.get("/events/1").get_data(as_text=True)
+    assert "campus-pin" not in page
+    assert "maps.google.com/maps?q=" in page
+
+
+def test_external_place_uses_selected_coordinates(client):
+    login(client)
+    add_event(client, location="相模原市民会館", location_lat="35.5713", location_lng="139.3732")
+    page = client.get("/events/1").get_data(as_text=True)
+    assert "campus-pin" not in page
+    assert "q=35.5713%2C139.3732" in page
+
+    # 候補から選ばずに入力した場所は、名称でそのまま検索する(キャンパス名を付けない)
+    add_event(client, location="横浜アリーナ", location_lat="abc")
+    page = client.get("/events/2").get_data(as_text=True)
+    assert "q=%E6%A8%AA%E6%B5%9C" in page and "検索した結果" in page
+
+    add_event(client, location="オンライン(Zoom)")
+    assert "map-embed" not in client.get("/events/3").get_data(as_text=True)
+
+
+def test_place_search_api(client, app, monkeypatch):
+    calls = []
+
+    def fake_fetch(query):
+        calls.append(query)
+        return [{"name": "相模原市民会館", "address": "神奈川県相模原市中央区",
+                 "lat": 35.5713, "lng": 139.3732, "campus": False}]
+
+    monkeypatch.setattr(places, "_fetch_external", fake_fetch)
+    data = client.get("/api/places?q=号館").get_json()
+    names = [r["name"] for r in data["results"]]
+    assert names[0] == "L1号館(一般教育棟)" and "相模原市民会館" in names
+    assert all(r["campus"] for r in data["results"][:-1])
+
+    # 1 文字では学外検索をしない
+    calls.clear()
+    client.get("/api/places?q=L")
+    assert calls == []
+
+    def failing_fetch(query):
+        raise OSError("network down")
+
+    monkeypatch.setattr(places, "_fetch_external", failing_fetch)
+    data = client.get("/api/places?q=体育館").get_json()
+    assert data["error"] is True and data["results"][0]["name"] == "総合体育館"
+
+
+def test_admin_can_move_campus_pin(client):
+    assert client.get("/admin/campus-map").status_code == 302
+    login(client)
+    token = csrf(client, "/admin/campus-map")
+    client.post("/admin/campus-map", data={"name": "S号館(理学部校舎)", "x": "735", "y": "415",
+                                          "_csrf_token": token})
+    add_event(client, location="S号館")
+    page = client.get("/events/1").get_data(as_text=True)
+    assert "left: 50.0%; top: 50.0%;" in page
+    # ピン位置から求めた概算の緯度経度で Google マップを表示する
+    assert "maps.google.com/maps?q=35.5" in page
+
+    res = client.post("/admin/campus-map", data={"name": "存在しない施設", "x": "1", "y": "1",
+                                                "_csrf_token": token}, follow_redirects=True)
+    assert "施設が見つかりません" in res.get_data(as_text=True)
+
+    client.post("/admin/campus-map", data={"name": "S号館(理学部校舎)", "reset": "1",
+                                          "_csrf_token": token})
+    assert "campus-pin" not in client.get("/events/1").get_data(as_text=True)

@@ -93,6 +93,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #99f6e4; border-c
 .info { display: grid; grid-template-columns: 6em 1fr; gap: 6px 12px; margin: 0 0 16px; }
 .info dt { color: var(--muted); font-weight: 700; }
 .info dd { margin: 0; overflow-wrap: anywhere; }
+.map-embed { position: relative; margin: 8px 0 4px; aspect-ratio: 16 / 10; max-height: 320px; width: 100%; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--bg); }
+.map-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .description { border-top: 1px solid var(--border); padding-top: 16px; margin-bottom: 16px; overflow-wrap: anywhere; }
 .pre { white-space: pre-wrap; }
 .detail-poster img, .current-poster img { width: 100%; max-width: 320px; border-radius: 10px; border: 1px solid var(--border); }
@@ -166,3 +168,49 @@ label.checkbox input { width: auto; margin: 0; }
 .mode-option strong { display: block; }
 .mode-option:has(input:checked) { border-color: var(--primary); background: #f0fdfa; }
 .link-button.danger { color: var(--danger); font-weight: 700; }
+
+/* 開催場所の入力候補 */
+.place-field { position: relative; display: grid; gap: 4px; }
+.place-field > label { margin: 0; }
+.field-help, .place-selected { font-size: 13px; color: var(--muted); }
+.place-selected { color: var(--primary-dark); font-weight: 700; }
+.place-options { position: absolute; z-index: 10; top: 64px; left: 0; right: 0; list-style: none; margin: 0; padding: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 24px rgba(0,0,0,.12); max-height: 320px; overflow-y: auto; }
+.place-option { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: center; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+.place-option small { grid-column: 2; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.place-option strong { overflow-wrap: anywhere; }
+.place-option:hover, .place-option.is-active { background: #ecfdf5; }
+.place-tag { grid-row: span 2; font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 4px; background: #eef2f4; color: var(--muted); }
+.place-option.is-campus .place-tag { background: var(--primary); color: #fff; }
+.place-note { padding: 8px 10px; font-size: 13px; color: var(--muted); }
+
+/* 詳細ページの地図 */
+.place-maps { display: grid; gap: 16px; margin-bottom: 16px; }
+@media (min-width: 760px) { .place-maps:has(.campus-map) { grid-template-columns: 1fr 1fr; } }
+.place-map { margin: 0; min-width: 0; }
+.place-map figcaption { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+.place-map figcaption strong { color: var(--text); }
+.place-map .map-embed { aspect-ratio: 1470 / 830; max-height: none; }
+
+/* キャンパスマップ(イラスト)とピン */
+.campus-map { position: relative; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fff; }
+.campus-map img { display: block; width: 100%; height: auto; user-select: none; }
+.campus-pin { position: absolute; width: 0; height: 0; }
+.campus-pin::before { content: ""; position: absolute; left: -9px; top: -24px; width: 18px; height: 18px; background: #dc2626; border: 3px solid #fff; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 2px 6px rgba(0,0,0,.35); }
+.campus-pin-label { position: absolute; left: 0; bottom: 30px; transform: translateX(-50%); white-space: nowrap; background: #1f2933; color: #fff; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,.25); pointer-events: none; }
+.campus-pin-label::after { content: ""; position: absolute; left: 50%; top: 100%; margin-left: -5px; border: 5px solid transparent; border-top-color: #1f2933; }
+.campus-pin.is-active::before { animation: pin-drop .5s ease-out; }
+@keyframes pin-drop { from { transform: translateY(-14px) rotate(-45deg); opacity: 0; } to { transform: rotate(-45deg); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .campus-pin.is-active::before { animation: none; } }
+
+/* 管理画面: ピン設定 */
+.pin-editor { display: grid; gap: 16px; }
+@media (min-width: 860px) { .pin-editor { grid-template-columns: 260px 1fr; align-items: start; } }
+.pin-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 70vh; overflow-y: auto; }
+.pin-choice { width: 100%; display: flex; justify-content: space-between; gap: 8px; text-align: left; font: inherit; font-size: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+.pin-choice.is-selected { border-color: var(--primary); background: #f0fdfa; font-weight: 700; }
+.pin-unset { font-size: 12px; color: var(--danger); white-space: nowrap; }
+.campus-map.is-editable { cursor: crosshair; }
+.campus-map.is-editable .campus-pin:not(.is-active)::before { width: 10px; height: 10px; left: -5px; top: -14px; border-width: 2px; background: #94a3b8; }
+.campus-map.is-editable .campus-pin:not(.is-active) .campus-pin-label { display: none; }
+.pin-form { margin-top: 10px; }
+.button:disabled { opacity: .5; cursor: not-allowed; }

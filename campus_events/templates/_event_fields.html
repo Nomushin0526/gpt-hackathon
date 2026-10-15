@@ -23,14 +23,17 @@
       <input type="datetime-local" name="end_at" value="{{ form.end_at or '' }}">
     </label>
   </div>
-  <label>開催場所 <span class="req">必須</span>
-    <input name="location" required maxlength="100" list="campus-locations"
-           placeholder="例: L1号館 6階 大講義室" value="{{ form.location or '' }}">
-    <small>候補から建物を選び、教室名などを書き足してください。「図書館」ではなく「北里大学中央図書館」のように正式名称で入力してください。</small>
-  </label>
-  <datalist id="campus-locations">
-    {% for loc in CAMPUS_LOCATIONS %}<option value="{{ loc }}">{% endfor %}
-  </datalist>
+  <div class="place-field js-place-field" data-search-url="{{ url_for('public.place_search') }}">
+    <label for="location-input">開催場所 <span class="req">必須</span></label>
+    <input id="location-input" name="location" required maxlength="100" autocomplete="off"
+           role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="location-options"
+           placeholder="例: L1号館 / 相模原市民会館" value="{{ form.location or '' }}">
+    <input type="hidden" name="location_lat" value="{{ form.location_lat or '' }}">
+    <input type="hidden" name="location_lng" value="{{ form.location_lng or '' }}">
+    <ul class="place-options" id="location-options" role="listbox" hidden></ul>
+    <small class="field-help">名称を入力すると候補が表示されます。学内の建物は選んだあとに「6階 大講義室」などの教室名を書き足せます。学外の場所も候補から選ぶと、地図に正しい位置が表示されます。</small>
+    <small class="js-place-selected place-selected" hidden></small>
+  </div>
 </fieldset>
 
 {% set mode = form.registration_mode or "none" %}

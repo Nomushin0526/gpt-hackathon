@@ -10,7 +10,7 @@ from flask import (
     request, session, url_for,
 )
 
-from . import events
+from . import events, places
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -171,3 +171,31 @@ def delete_event(event_id):
     events.delete_poster(event["poster_filename"])
     flash("イベントを削除しました。", "info")
     return redirect(url_for("admin.dashboard"))
+
+
+@bp.route("/campus-map", methods=["GET", "POST"])
+@login_required
+def campus_map():
+    """キャンパスマップ上の施設のピン位置を設定する。"""
+    if request.method == "POST":
+        name = request.form.get("name", "")
+        x = request.form.get("x", type=float)
+        y = request.form.get("y", type=float)
+        if request.form.get("reset"):
+            places.reset_campus_pin(name)
+            flash(f"「{name}」のピンを初期位置に戻しました。", "info")
+        elif x is None or y is None:
+            flash("ピンの位置を地図上でクリックして指定してください。", "error")
+        else:
+            try:
+                places.set_campus_pin(name, x, y)
+                flash(f"「{name}」のピンの位置を保存しました。", "info")
+            except ValueError as e:
+                flash(str(e), "error")
+        return redirect(url_for("admin.campus_map", place=name))
+    return render_template(
+        "admin/campus_map.html",
+        places=places.campus_places(),
+        selected=request.args.get("place", ""),
+        map_size=places.CAMPUS_MAP_SIZE,
+    )

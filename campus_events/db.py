@@ -40,6 +40,11 @@ def migrate_db():
         db.execute("ALTER TABLE events ADD COLUMN registration_mode TEXT NOT NULL DEFAULT 'none'")
         if "requires_registration" in columns:
             db.execute("UPDATE events SET registration_mode = 'external' WHERE requires_registration = 1")
+    if "location_lat" not in columns:
+        db.execute("ALTER TABLE events ADD COLUMN location_lat REAL")
+        db.execute("ALTER TABLE events ADD COLUMN location_lng REAL")
+    if "campus_pins" not in tables:
+        db.execute("CREATE TABLE campus_pins (name TEXT PRIMARY KEY, x REAL NOT NULL, y REAL NOT NULL)")
     if "registrations" not in tables:
         db.executescript(
             """

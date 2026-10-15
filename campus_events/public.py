@@ -5,7 +5,7 @@ from flask import (
     render_template, request, send_from_directory, url_for,
 )
 
-from . import events
+from . import events, places
 
 bp = Blueprint("public", __name__)
 
@@ -63,6 +63,12 @@ def registration_counts():
     """一覧・詳細ページの申込人数をリアルタイム更新するための API。"""
     ids = [int(i) for i in request.args.get("ids", "").split(",") if i.isdigit()][:100]
     return jsonify(events.registration_counts(ids))
+
+
+@bp.route("/api/places")
+def place_search():
+    """開催場所の入力欄に出す候補(学内施設 + 学外の場所)。"""
+    return jsonify(places.search(request.args.get("q", "")[:100]))
 
 
 @bp.route("/events/<int:event_id>/calendar.ics")

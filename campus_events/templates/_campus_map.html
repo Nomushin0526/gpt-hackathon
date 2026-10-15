@@ -1,0 +1,10 @@
+{# キャンパスマップ(イラスト)にピンを立てる。pins: 施設の一覧、active: 強調する施設名 #}
+<div class="campus-map {{ map_class or '' }}">
+  <img src="{{ url_for('static', filename=CAMPUS_MAP_IMAGE) }}" alt="北里大学 相模原キャンパスのマップ" draggable="false">
+  {% for p in pins if p.pin_pct %}
+    <span class="campus-pin{% if p.name == active %} is-active{% endif %}"
+          style="left: {{ p.pin_pct[0] }}%; top: {{ p.pin_pct[1] }}%;" data-name="{{ p.name }}">
+      <span class="campus-pin-label">{{ p.name }}</span>
+    </span>
+  {% endfor %}
+</div>

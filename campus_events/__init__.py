@@ -3,9 +3,9 @@ import secrets
 
 from flask import Flask, abort, request, session
 
-from . import db
+from . import db, places
 from .events import (
-    CAMPUS_LOCATIONS, CATEGORIES, ORGANIZER_TYPES, REGISTRATION_MODES, SOURCE_LABELS,
+    CATEGORIES, ORGANIZER_TYPES, REGISTRATION_MODES, SOURCE_LABELS,
     STATUS_LABELS, is_full, is_open_for_registration, parse_dt,
 )
 
@@ -21,6 +21,8 @@ def create_app(test_config=None):
         MAX_CONTENT_LENGTH=5 * 1024 * 1024,
         # 学生課の管理画面パスワード。本番では必ず環境変数で設定すること。
         ADMIN_PASSWORD=os.environ.get("ADMIN_PASSWORD", "admin"),
+        # 学外の開催場所の検索に使う Photon(OpenStreetMap)互換の API。空にすると学内施設のみ候補に出す
+        PLACE_SEARCH_URL=os.environ.get("PLACE_SEARCH_URL", "https://photon.komoot.io/api/"),
     )
     if test_config:
         app.config.update(test_config)
@@ -66,9 +68,10 @@ def create_app(test_config=None):
         STATUS_LABELS=STATUS_LABELS,
         SOURCE_LABELS=SOURCE_LABELS,
         REGISTRATION_MODES=REGISTRATION_MODES,
-        CAMPUS_LOCATIONS=CAMPUS_LOCATIONS,
+        CAMPUS_MAP_IMAGE=places.CAMPUS_MAP_IMAGE,
         is_full=is_full,
         is_open_for_registration=is_open_for_registration,
+        map_info=places.map_info,
     )
 
     from . import admin, public

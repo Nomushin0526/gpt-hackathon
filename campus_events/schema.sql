@@ -1,4 +1,5 @@
 DROP TABLE IF EXISTS registrations;
+DROP TABLE IF EXISTS campus_pins;
 DROP TABLE IF EXISTS events;
 
 -- 公開イベントと学生からの応募を 1 テーブルで管理する。
@@ -13,6 +14,8 @@ CREATE TABLE events (
     start_at TEXT NOT NULL,
     end_at TEXT,
     location TEXT NOT NULL,
+    location_lat REAL,
+    location_lng REAL,
     organizer_name TEXT NOT NULL,
     organizer_type TEXT NOT NULL,
     contact_email TEXT,
@@ -40,4 +43,11 @@ CREATE TABLE registrations (
     student_number TEXT,
     created_at TEXT NOT NULL,
     UNIQUE (event_id, email)
+);
+
+-- 学生課が修正したキャンパスマップ上のピン位置(画像上のピクセル座標)
+CREATE TABLE campus_pins (
+    name TEXT PRIMARY KEY,
+    x REAL NOT NULL,
+    y REAL NOT NULL
 );
