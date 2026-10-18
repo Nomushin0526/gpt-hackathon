@@ -1,0 +1,288 @@
+/* 追加ページ専用。元の style.css の色・書体・幅を引き継ぐ。
+   セレクターを .ds-page 内に限定し、既存一覧・申込フォーム・地図へ影響させない。 */
+.ds-page {
+  --ds-soft: #ecfdf5;
+  --ds-radius: 12px;
+  --ds-shadow: 0 3px 12px rgba(15, 118, 110, .04);
+  min-width: 0;
+  color: var(--text);
+}
+.ds-page :is(a, button, input, select, summary):focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+.ds-page h1,
+.ds-page h2 {
+  margin-top: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.ds-page h1 { font-size: clamp(22px, 3.4vw, 28px); margin-bottom: 10px; }
+.ds-page h2 { font-size: 20px; margin-bottom: 12px; }
+.ds-page p { margin-top: 0; }
+.ds-page summary { cursor: pointer; font-weight: 700; }
+.ds-page .eyebrow {
+  color: var(--primary-dark);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  margin-bottom: 8px;
+}
+
+/* おすすめとお気に入り */
+.ds-page .hero { padding: 28px 24px; margin-bottom: 28px; }
+.ds-page .hero h1 { font-size: clamp(24px, 4vw, 32px); margin-bottom: 14px; }
+.ds-page .hero .eyebrow { color: #e6fffa; }
+.ds-page .hero-description { max-width: 680px; font-size: 14px; color: #fff; }
+.ds-page .profile-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  border-top: 1px solid rgba(255, 255, 255, .35);
+  padding-top: 14px;
+  margin-top: 20px;
+  font-size: 12px;
+}
+.ds-page .profile-stats strong { font-size: 17px; margin-left: 5px; }
+.ds-page .section-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 24px 0 16px;
+}
+.ds-page .section-heading h2 { margin-bottom: 0; }
+.ds-page .section-heading .eyebrow { margin-bottom: 4px; }
+.ds-page .section-heading > a { font-size: 14px; }
+.ds-page .card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.ds-page .ds-recommendation-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--ds-radius);
+  background: var(--surface);
+  box-shadow: var(--ds-shadow);
+}
+.ds-page .ds-recommendation-card > .event-card {
+  border: 0;
+  border-radius: var(--ds-radius) var(--ds-radius) 0 0;
+}
+.ds-page .ds-recommendation-card > .event-card:hover {
+  background: var(--ds-soft);
+  box-shadow: none;
+  transform: none;
+}
+.ds-page .ds-recommendation-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 0 14px 16px;
+  min-width: 0;
+}
+.ds-page .event-description { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; margin-bottom: 14px; }
+.ds-page .reason {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  margin-top: auto;
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ds-page .reason summary { color: var(--primary-dark); }
+.ds-page .reason summary span { display: inline-block; margin-left: 8px; font-size: 11px; font-weight: 400; }
+.ds-page .reason p { margin: 10px 0 0; overflow-wrap: anywhere; }
+.ds-page .card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+}
+.ds-page .card-actions form { margin: 0; }
+.ds-page .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 8px 13px;
+  line-height: 1.6;
+  font-size: 14px;
+  text-align: center;
+}
+.ds-page .button-primary { background: var(--primary); color: #fff; }
+.ds-page .button-primary:hover { background: var(--primary-dark); }
+.ds-page .button-quiet { background: var(--ds-soft); color: var(--primary-dark); border: 1px solid var(--primary); }
+.ds-page .button-quiet:hover { background: #d1fae5; }
+.ds-page .panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--ds-radius);
+  box-shadow: var(--ds-shadow);
+}
+.ds-page .preferences { margin-top: 28px; padding: 18px 20px; }
+.ds-page .preferences summary { font-size: 14px; }
+.ds-page .detail-content { padding-top: 16px; color: var(--muted); font-size: 13px; }
+.ds-page .settings-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.ds-page .settings-actions form { margin: 0; }
+.ds-page .empty-state {
+  text-align: center;
+  padding: 32px 20px;
+  border: 1px dashed var(--border);
+  border-radius: var(--ds-radius);
+  background: var(--surface);
+  margin: 24px 0;
+}
+.ds-page .empty-state p { max-width: 640px; margin: 0 auto 20px; color: var(--muted); font-size: 14px; }
+.ds-page .page-heading { margin-bottom: 24px; }
+.ds-page .page-heading > p:not(.eyebrow),
+.ds-page .page-heading > div > p:not(.eyebrow) { color: var(--muted); font-size: 14px; }
+
+/* 学生課のデータ分析 */
+.ds-page .dashboard-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.ds-page .filter-panel { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; padding: 18px; }
+.ds-page .filter-description { margin-right: auto; align-self: center; }
+.ds-page .filter-description strong,
+.ds-page .filter-description span { display: block; }
+.ds-page .filter-description strong { font-size: 14px; }
+.ds-page .filter-description span { font-size: 12px; color: var(--muted); }
+.ds-page .filter-panel label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.ds-page .filter-panel input { min-height: 42px; margin-top: 0; }
+.ds-page .range-separator { align-self: center; padding-top: 17px; }
+.ds-page .download-link { font-size: 13px; align-self: center; }
+.ds-page .scope-note { color: var(--muted); font-size: 12px; margin: 10px 2px 20px; }
+.ds-page .metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.ds-page .metric-card { min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--ds-radius); padding: 20px 16px; }
+.ds-page .metric-card > p { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+.ds-page .metric-card > div {
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.3;
+  margin-bottom: 10px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.ds-page .metric-card > div small { font-size: 13px; margin-left: 5px; font-weight: 400; }
+.ds-page .metric-card > small { display: block; font-size: 11px; color: var(--muted); }
+.ds-page .metric-accent { background: var(--primary); border-color: var(--primary); color: #fff; }
+.ds-page .metric-accent > p,
+.ds-page .metric-accent > small { color: #e6fffa; }
+.ds-page .metric-accent .unknown { color: #e6fffa; }
+.ds-page .activity-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 24px;
+  padding: 18px 2px;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ds-page .activity-strip span { margin-right: 8px; }
+.ds-page .activity-strip strong { font-size: 20px; color: var(--text); }
+.ds-page .activity-strip p { flex-basis: 100%; margin: 0; font-size: 11px; }
+.ds-page .chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.ds-page .chart-panel { min-width: 0; padding: 20px 18px; }
+.ds-page .chart-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 20px; }
+.ds-page .chart-heading h2 { font-size: 18px; margin: 0; }
+.ds-page .chart-heading .eyebrow { margin-bottom: 4px; }
+.ds-page .chart-heading select { max-width: 158px; min-height: 40px; padding: 7px 9px; font-size: 12px; }
+.ds-page .bars { display: flex; flex-direction: column; gap: 16px; min-height: 100px; }
+.ds-page .bar-row { display: grid; grid-template-columns: 128px minmax(24px, 1fr) 66px; align-items: center; gap: 10px; }
+.ds-page .bar-label { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.ds-page .bar-context { display: block; color: var(--muted); font-size: 10px; font-weight: 400; margin-top: 3px; }
+.ds-page .bar-track { height: 10px; background: #eef2f4; border-radius: 4px; overflow: hidden; }
+.ds-page .bar-fill { height: 100%; background: var(--primary); border-radius: 4px; min-width: 0; }
+.ds-page .bar-value { text-align: right; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ds-page .is-missing { background: repeating-linear-gradient(135deg, #f1f5f4 0, #f1f5f4 3px, #dde3e6 3px, #dde3e6 5px); }
+.ds-page .chart-caption { color: var(--muted); font-size: 11px; margin: 20px 0 0; }
+.ds-page .chart-empty { color: var(--muted); font-size: 13px; align-self: center; padding: 24px 0; }
+.ds-page .ranking-chart-panel { margin-top: 16px; }
+.ds-page .ranking-bars .bar-row { grid-template-columns: minmax(160px, 36%) minmax(40px, 1fr) 70px; }
+.ds-page .ranking-bars .bar-fill { background: var(--primary-dark); }
+.ds-page .muted { color: var(--muted); font-size: 12px; }
+.ds-page .table-panel { margin-top: 20px; padding: 0 18px 18px; }
+.ds-page .table-scroll { overflow-x: auto; width: 100%; }
+.ds-page table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+.ds-page th,
+.ds-page td { border-bottom: 1px solid var(--border); padding: 11px 10px; vertical-align: middle; }
+.ds-page thead th { background: #f1f5f4; font-weight: 700; white-space: nowrap; }
+.ds-page tbody th { min-width: 220px; font-weight: 500; }
+.ds-page tbody th a { overflow-wrap: anywhere; }
+.ds-page tbody th small { display: block; color: var(--muted); font-size: 11px; font-weight: 400; margin-top: 4px; }
+.ds-page td { min-width: 60px; }
+.ds-page td small { font-size: 11px; }
+.ds-page .number { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ds-page .unknown { color: var(--muted); }
+.ds-page caption { text-align: left; font-weight: 700; padding: 14px 0; }
+.ds-page .aggregate-tables { padding: 18px; margin-top: 20px; }
+.ds-page .aggregate-tables summary { font-size: 14px; }
+.ds-page .reading-guide { padding: 26px 2px 0; color: var(--muted); font-size: 12px; }
+.ds-page .reading-guide h2 { font-size: 16px; color: var(--text); }
+.ds-page .reading-guide ul { padding-left: 20px; }
+.ds-page .reading-guide li { margin-bottom: 7px; }
+.ds-page .visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+@media (max-width: 900px) {
+  .ds-page .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ds-page .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ds-page .chart-grid { grid-template-columns: 1fr; }
+  .ds-page .filter-description { width: 100%; }
+  .ds-page .bar-row { grid-template-columns: 180px minmax(40px, 1fr) 75px; }
+}
+@media (max-width: 640px) {
+  .ds-page .hero { padding: 24px 20px; }
+  .ds-page .hero h1 { font-size: 26px; }
+  .ds-page .profile-stats { gap: 8px 16px; }
+  .ds-page .profile-stats span:last-child { width: 100%; }
+  .ds-page .section-heading { align-items: flex-start; flex-direction: column; }
+  .ds-page .card-grid { grid-template-columns: 1fr; }
+  .ds-page .dashboard-heading { align-items: flex-start; flex-direction: column; }
+  .ds-page .metrics-grid { gap: 10px; }
+  .ds-page .metric-card { padding: 16px 12px; }
+  .ds-page .metric-card > p { font-size: 12px; }
+  .ds-page .metric-card > div { font-size: 28px; }
+  .ds-page .filter-panel { gap: 10px; padding: 16px; }
+  .ds-page .filter-panel label { flex: 1 1 calc(50% - 5px); min-width: 0; }
+  .ds-page .filter-panel input { width: 100%; min-width: 0; }
+  .ds-page .range-separator { display: none; }
+  .ds-page .download-link { margin-left: auto; }
+  .ds-page .chart-panel { padding: 18px 14px; }
+  .ds-page .chart-heading h2 { font-size: 17px; }
+  .ds-page .chart-heading select { max-width: 150px; }
+  .ds-page .bar-row { grid-template-columns: 106px minmax(18px, 1fr) 62px; gap: 8px; }
+  .ds-page .bar-label { font-size: 11px; }
+  .ds-page .bar-context { font-size: 9px; }
+  .ds-page .bar-value { font-size: 11px; }
+  .ds-page .ranking-bars .bar-row { grid-template-columns: 112px minmax(18px, 1fr) 54px; }
+  .ds-page .table-panel { padding: 0 14px 14px; }
+  .ds-page .aggregate-tables { padding: 16px 14px; }
+  .ds-page .preferences { padding: 16px; }
+}
+@media print {
+  .ds-page .filter-panel,
+  .ds-page button,
+  .ds-page .settings-actions { display: none; }
+  .ds-page .panel,
+  .ds-page .metric-card { box-shadow: none; break-inside: avoid; }
+  .ds-page .chart-grid { display: block; }
+  .ds-page .chart-panel { margin-bottom: 16px; }
+  .ds-page .table-scroll { overflow: visible; }
+  .ds-page .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

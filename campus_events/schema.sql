@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS event_views;
+DROP TABLE IF EXISTS event_favorites;
 DROP TABLE IF EXISTS registrations;
 DROP TABLE IF EXISTS campus_pins;
 DROP TABLE IF EXISTS events;

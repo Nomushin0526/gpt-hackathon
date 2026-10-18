@@ -1,0 +1,13 @@
+{% set ds_is_saved = event.id in ds_favorite_ids|default([]) %}
+<section class="ds-detail-actions" aria-label="イベントの保存とおすすめ">
+  <div class="ds-detail-action-buttons">
+    <form action="{{ url_for('ds.favorite', event_id=event.id) }}" method="post">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="{{ 'remove' if ds_is_saved else 'add' }}">
+      <input type="hidden" name="back" value="detail">
+      <button class="button button-secondary" type="submit" aria-pressed="{{ 'true' if ds_is_saved else 'false' }}">{{ '★ お気に入りを解除' if ds_is_saved else '☆ お気に入りに保存' }}</button>
+    </form>
+    <a href="{{ url_for('ds.recommendations_page') }}">あなたへのおすすめを見る →</a>
+  </div>
+  <p>このブラウザーのお気に入りに保存し、次のおすすめに反映します。</p>
+</section>

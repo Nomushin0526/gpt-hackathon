@@ -4,13 +4,15 @@ import csv
 import functools
 import hmac
 import io
+import re
+from datetime import date, timedelta
 
 from flask import (
     Blueprint, Response, abort, current_app, flash, redirect, render_template,
-    request, session, url_for,
+    request, session, url_for, jsonify,
 )
 
-from . import events, places
+from . import analytics, behavior, events, places
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -58,6 +60,68 @@ def dashboard():
         tab=tab,
         events=events.list_for_admin(tab),
         counts=events.count_by_status(),
+    )
+
+
+def _analytics_data():
+    """期間はイベントの開催開始日。空欄なら前90日〜後30日を使う。"""
+    today = events.now_jst().date()
+    start = request.args.get("start") or (today - timedelta(days=90)).isoformat()
+    end = request.args.get("end") or (today + timedelta(days=30)).isoformat()
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", start) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", end):
+        raise ValueError("日付を YYYY-MM-DD 形式で入力してください。")
+    try:
+        start_date, end_date = date.fromisoformat(start), date.fromisoformat(end)
+    except ValueError:
+        raise ValueError("存在する日付を入力してください。") from None
+    if start_date > end_date:
+        raise ValueError("開始日は終了日以前にしてください。")
+    behavior.purge_old_views()
+    return analytics.build_dashboard(start_date, end_date)
+
+
+@bp.get("/analytics")
+@login_required
+def analytics_dashboard():
+    try:
+        report = _analytics_data()
+    except ValueError as error:
+        return render_template("ds/error.html", message=str(error)), 400
+    return render_template("ds/analytics.html", report=report)
+
+
+@bp.get("/analytics.json")
+@login_required
+def analytics_api():
+    try:
+        return jsonify(_analytics_data())
+    except ValueError as error:
+        return jsonify(error=str(error)), 400
+
+
+@bp.get("/analytics.csv")
+@login_required
+def analytics_csv():
+    try:
+        report = _analytics_data()
+    except ValueError as error:
+        return render_template("ds/error.html", message=str(error)), 400
+    buf = io.StringIO(newline="")
+    writer = csv.writer(buf)
+    writer.writerow([
+        "イベントID", "イベント名", "カテゴリ", "開催開始日時", "参加申込方法",
+        "現在のサイト内申込件数", "定員", "定員充足率(%)", "保存期間内の閲覧数", "現在のお気に入り数",
+    ])
+    for row in report["ranking"]:
+        values = [
+            row["id"], row["title"], row["category"], row["start_at"],
+            events.REGISTRATION_MODES.get(row["registration_mode"], row["registration_mode"]),
+            row["registered"], row["capacity"], row["occupancy_percent"], row["view_count"], row["favorite_count"],
+        ]
+        writer.writerow([analytics.csv_safe(value) for value in values])
+    return Response(
+        "\ufeff" + buf.getvalue(), mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=event-analytics.csv"},
     )
 
 

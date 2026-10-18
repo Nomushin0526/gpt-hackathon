@@ -23,6 +23,11 @@ def create_app(test_config=None):
         ADMIN_PASSWORD=os.environ.get("ADMIN_PASSWORD", "admin"),
         # 学外の開催場所の検索に使う Photon(OpenStreetMap)互換の API。空にすると学内施設のみ候補に出す
         PLACE_SEARCH_URL=os.environ.get("PLACE_SEARCH_URL", "https://photon.komoot.io/api/"),
+        DS_HISTORY_DAYS=90,
+        DS_COOKIE_MAX_AGE=180 * 24 * 60 * 60,
+        DS_VIEW_WEIGHT=1.0,
+        DS_VIEW_CAP=3,
+        DS_FAVORITE_WEIGHT=5.0,
     )
     if test_config:
         app.config.update(test_config)
@@ -74,8 +79,12 @@ def create_app(test_config=None):
         map_info=places.map_info,
     )
 
-    from . import admin, public
+    from . import admin, behavior, data_science, public
 
     app.register_blueprint(public.bp)
     app.register_blueprint(admin.bp)
+    app.register_blueprint(data_science.bp)
+    behavior.init_app(app)
+    from .seed_ds import seed_ds_demo_command
+    app.cli.add_command(seed_ds_demo_command)
     return app

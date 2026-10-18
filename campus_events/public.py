@@ -5,7 +5,8 @@ from flask import (
     render_template, request, send_from_directory, url_for,
 )
 
-from . import events, places
+from . import behavior, events, places
+from .recommendations import get_recommendations
 
 bp = Blueprint("public", __name__)
 
@@ -21,7 +22,22 @@ def index():
     if filters["period"] not in ("upcoming", "week", "month", "past"):
         filters["period"] = "upcoming"
     results = events.search_public_events(**filters)
-    return render_template("index.html", events=results, filters=filters)
+    recommendation_preview = None
+    # 条件を指定して探しているときは検索結果に集中できるよう、
+    # おすすめ欄は通常のトップページにだけ表示する。
+    if (
+        filters["period"] == "upcoming"
+        and not filters["keyword"]
+        and not filters["category"]
+        and not filters["organizer_type"]
+    ):
+        recommendation_preview = get_recommendations(
+            behavior.get_visitor_id(create=False), limit=3
+        )
+    return render_template(
+        "index.html", events=results, filters=filters,
+        recommendation_preview=recommendation_preview,
+    )
 
 
 def _public_event_or_404(event_id):
@@ -33,7 +49,10 @@ def _public_event_or_404(event_id):
 
 @bp.route("/events/<int:event_id>")
 def detail(event_id):
-    return render_template("detail.html", event=_public_event_or_404(event_id), form={})
+    event = _public_event_or_404(event_id)
+    if request.method == "GET":
+        behavior.record_view(event_id)
+    return render_template("detail.html", event=event, form={})
 
 
 @bp.route("/events/<int:event_id>/register", methods=["POST"])

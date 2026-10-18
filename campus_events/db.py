@@ -22,6 +22,13 @@ def init_db():
     db = get_db()
     with current_app.open_resource("schema.sql") as f:
         db.executescript(f.read().decode("utf-8"))
+    _migrate_data_science_tables()
+
+
+def _migrate_data_science_tables():
+    """IF NOT EXISTS だけの追加DDL。既存レコードを保持する。"""
+    with current_app.open_resource("schema_ds.sql") as f:
+        get_db().executescript(f.read().decode("utf-8"))
 
 
 def migrate_db():
@@ -60,6 +67,14 @@ def migrate_db():
             """
         )
     db.commit()
+    _migrate_data_science_tables()
+
+
+@click.command("migrate-db")
+def migrate_db_command():
+    """登録済みデータを残して、追加テーブルを作成する。"""
+    migrate_db()
+    click.echo("既存データを保持してデータベースを更新しました。")
 
 
 @click.command("init-db")
@@ -82,5 +97,6 @@ def init_app(app):
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
     app.cli.add_command(seed_db_command)
+    app.cli.add_command(migrate_db_command)
     with app.app_context():
         migrate_db()

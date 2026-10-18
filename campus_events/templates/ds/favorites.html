@@ -1,0 +1,8 @@
+{% extends 'ds/base.html' %}
+{% from 'ds/_cards.html' import event_card with context %}
+{% block ds_title %}お気に入り{% endblock %}
+{% block ds_content %}
+  <section class="page-heading"><p class="eyebrow">YOUR COLLECTION</p><h1>お気に入り</h1><p>このブラウザーで保存したイベントです。開催済みのイベントも、次のおすすめの参考になります。</p></section>
+  {% if favorites %}<div class="card-grid">{% for event in favorites %}{{ event_card(event, back='favorites', saved=true) }}{% endfor %}</div>
+  {% else %}<div class="empty-state"><h2>気になるイベントを保存しましょう</h2><p>保存したイベントはここに表示され、あなたへのおすすめにも反映されます。</p><a class="button button-primary" href="{{ url_for('ds.recommendations_page') }}">イベントを探す</a></div>{% endif %}
+{% endblock %}

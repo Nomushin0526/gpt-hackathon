@@ -1,0 +1,5 @@
+<a class="ds-nav-link" href="{{ url_for('ds.recommendations_page') }}"{% if request.endpoint == 'ds.recommendations_page' %} aria-current="page"{% endif %}>おすすめ</a>
+<a class="ds-nav-link" href="{{ url_for('ds.favorites_page') }}"{% if request.endpoint == 'ds.favorites_page' %} aria-current="page"{% endif %}>お気に入り</a>
+{% if session.get('is_admin') %}
+  <a class="ds-nav-link" href="{{ url_for('admin.analytics_dashboard') }}"{% if request.endpoint == 'admin.analytics_dashboard' %} aria-current="page"{% endif %}>データ分析</a>
+{% endif %}

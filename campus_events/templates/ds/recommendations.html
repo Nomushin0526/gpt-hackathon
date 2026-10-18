@@ -1,0 +1,18 @@
+{% extends 'ds/base.html' %}
+{% from 'ds/_cards.html' import event_card with context %}
+{% block ds_title %}あなたへのおすすめ{% endblock %}
+{% block ds_content %}
+  <section class="hero">
+    <p class="eyebrow">DISCOVER YOUR NEXT INTEREST</p>
+    <h1>気になることから、<br>次のイベントへ。</h1>
+    <p class="hero-description">{% if result.mode == 'personalized' %}このブラウザーの閲覧履歴とお気に入りから、内容の近いイベントを集めました。{% else %}まずは、気になるイベントを見たり保存したりしてみてください。あなたの興味をおすすめに反映します。{% endif %}</p>
+    <div class="profile-stats"><span>最近見たイベント <strong>{{ result.history_event_count }}</strong> 件</span><span>お気に入り <strong>{{ result.favorite_event_count }}</strong> 件</span><span>対象は公開中・開始前のイベント</span></div>
+  </section>
+  <div class="section-heading"><div><p class="eyebrow">FOR YOU</p><h2>{{ 'あなたへのおすすめ' if result.mode == 'personalized' else 'これから参加できるイベント' }}</h2></div><a href="{{ url_for('public.index') }}">すべてのイベントを見る →</a></div>
+  {% if result['items'] %}
+    <div class="card-grid">{% for item in result['items'] %}{{ event_card(item.event, item.similarity, item.reason) }}{% endfor %}</div>
+  {% else %}
+    <div class="empty-state"><h2>新しい候補がまだありません</h2><p>開催前の公開イベントがないか、候補をすでに閲覧・保存しています。お気に入りやイベント一覧も確認できます。</p><a class="button button-primary" href="{{ url_for('ds.favorites_page') }}">お気に入りを見る</a></div>
+  {% endif %}
+  <details class="preferences panel"><summary>おすすめに使うデータと設定</summary><div class="detail-content"><p>このブラウザーで見た過去{{ ds_history_days }}日間の公開イベントと、保存中のお気に入りを使います。同じ日の同じイベントの再読み込みは1件として記録します。学生課の管理者としてログイン中の閲覧は記録しません。</p><p>ブラウザーを識別するCookieを使います。氏名・メールアドレス・学籍番号を推薦データに結び付けません。別のブラウザーや端末とは履歴を共有しません。Cookieだけを消してもサーバー上の記録は直ちには削除されないため、消去には下のボタンを使ってください。</p><div class="settings-actions"><form action="{{ url_for('ds.clear_history') }}" method="post" data-confirm="このブラウザーの閲覧履歴を削除しますか？ お気に入りは残ります。"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="button button-secondary" type="submit">閲覧履歴を削除</button></form><form action="{{ url_for('ds.clear_all') }}" method="post" data-confirm="このブラウザーの閲覧履歴とお気に入りをすべて削除しますか？"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="button button-danger" type="submit">履歴とお気に入りを削除</button></form></div></div></details>
+{% endblock %}

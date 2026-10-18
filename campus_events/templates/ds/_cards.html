@@ -1,0 +1,24 @@
+{% macro event_card(event, similarity=none, reason=none, back='recommendations', saved=false) %}
+<article class="ds-recommendation-card">
+  {% include "_event_card.html" %}
+  <div class="ds-recommendation-card-body">
+    <p class="event-description">{{ event.description | truncate(115) }}</p>
+    {% if reason %}
+      <details class="reason">
+        <summary>おすすめの理由{% if similarity is not none %}<span>類似度 {{ '%.3f' | format(similarity) }}</span>{% endif %}</summary>
+        <p>{{ reason }}</p>
+        {% if similarity is not none %}<p>類似度は文章の文字特徴の近さを0〜1で示します。参加確率や満足度の予測値ではありません。</p>{% endif %}
+      </details>
+    {% endif %}
+    <div class="card-actions">
+      <a class="button button-secondary" href="{{ url_for('public.detail', event_id=event.id) }}">詳しく見る</a>
+      <form action="{{ url_for('ds.favorite', event_id=event.id) }}" method="post">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="{{ 'remove' if saved else 'add' }}">
+        <input type="hidden" name="back" value="{{ back }}">
+        <button class="button {{ 'button-quiet' if saved else 'button-primary' }}" type="submit" aria-label="{{ event.title }}を{{ 'お気に入りから解除' if saved else 'お気に入りに保存' }}" aria-pressed="{{ 'true' if saved else 'false' }}">{{ '保存を解除' if saved else '☆ 保存する' }}</button>
+      </form>
+    </div>
+  </div>
+</article>
+{% endmacro %}

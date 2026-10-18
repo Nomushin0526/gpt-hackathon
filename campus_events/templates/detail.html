@@ -10,6 +10,7 @@
       <span class="badge badge-{{ event.source }}">{{ SOURCE_LABELS[event.source] }}</span>
     </div>
     <h1>{{ event.title }}</h1>
+    {% include "ds/_detail_actions.html" %}
     <dl class="info">
       <dt>日時</dt><dd>{{ format_range(event.start_at, event.end_at) }}</dd>
       <dt>場所</dt><dd>{{ event.location }}</dd>

@@ -4,6 +4,7 @@
 <div class="admin-header">
   <h1>学生課 管理画面</h1>
   <div class="actions">
+    <a class="button button-secondary ds-admin-analytics" href="{{ url_for('admin.analytics_dashboard') }}">イベントのデータ分析</a>
     <a class="button button-secondary" href="{{ url_for('admin.campus_map') }}">📍 キャンパスマップのピン設定</a>
     <a class="button" href="{{ url_for('admin.new_event') }}">＋ イベントを登録(紙掲示物の転載など)</a>
   </div>

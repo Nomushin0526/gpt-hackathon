@@ -1,0 +1,4 @@
+# Python 3.11 以上で動作確認済み。既存の Flask / pytest は requirements.txt で管理します。
+scikit-learn>=1.8,<2
+numpy>=1.26,<3
+scipy>=1.11,<2
