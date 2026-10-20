@@ -69,13 +69,14 @@ def _settings():
         ),
         "view_weight": _weight("DS_VIEW_WEIGHT", 1.0),
         "favorite_weight": _weight("DS_FAVORITE_WEIGHT", 5.0),
+        "registration_weight": _weight("DS_REGISTRATION_WEIGHT", 8.0),
     }
 
 
 def _profile_activity(visitor_id, approved_ids, first_day, today, as_of, settings):
     """公開中の履歴だけを使い、同じ日の再読み込みを重複加点しない。"""
     if not visitor_id:
-        return {}, set(), set()
+        return {}, set(), set(), set()
 
     db = get_db()
     viewed = {
@@ -103,14 +104,28 @@ def _profile_activity(visitor_id, approved_ids, first_day, today, as_of, setting
         )
         if row["event_id"] in approved_ids
     }
+    # ログイン中の学生がこのサイトで申し込んだイベント(どの端末からの申込も含む)
+    registered = {
+        row["event_id"]
+        for row in db.execute(
+            """
+            SELECT r.event_id FROM registrations r
+              JOIN users u ON u.id = r.user_id
+             WHERE u.visitor_id = ? AND r.created_at <= ?
+            """,
+            (visitor_id, as_of),
+        )
+        if row["event_id"] in approved_ids
+    }
     weights = {
         event_id: (
             viewed.get(event_id, 0) * settings["view_weight"]
             + (settings["favorite_weight"] if event_id in favorites else 0)
+            + (settings["registration_weight"] if event_id in registered else 0)
         )
-        for event_id in viewed.keys() | favorites
+        for event_id in viewed.keys() | favorites | registered
     }
-    return weights, set(viewed), favorites
+    return weights, set(viewed), favorites, registered
 
 
 def _available(event, now):
@@ -245,7 +260,7 @@ def get_recommendations(visitor_id, limit=6, now=None):
         )
     ]
     approved_ids = {event["id"] for event in corpus}
-    weights, viewed, favorites = _profile_activity(
+    weights, viewed, favorites, registered = _profile_activity(
         visitor_id, approved_ids, first_day, today, as_of, settings
     )
     result = {
@@ -253,6 +268,7 @@ def get_recommendations(visitor_id, limit=6, now=None):
         "mode": "empty",
         "history_event_count": len(viewed),
         "favorite_event_count": len(favorites),
+        "registered_event_count": len(registered),
         "profile_event_count": len(weights),
     }
     candidates = [
@@ -308,7 +324,7 @@ def get_recommendations(visitor_id, limit=6, now=None):
                             "event": event,
                             "similarity": score,
                             "reason": (
-                                "閲覧・お気に入りした公開イベントと、"
+                                "閲覧・お気に入り・申込した公開イベントと、"
                                 "タイトル・説明文・カテゴリの文字特徴が近い候補です。"
                             ),
                         }

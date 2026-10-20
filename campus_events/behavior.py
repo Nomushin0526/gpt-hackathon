@@ -19,8 +19,19 @@ def _serializer():
     return URLSafeTimedSerializer(current_app.config["SECRET_KEY"], salt="campus-events-visitor-v1")
 
 
+def _logged_in_visitor_id():
+    """ログイン中の学生は、どの端末でもアカウントに紐付いた ID を使う。"""
+    user_id = session.get("user_id")
+    if not user_id:
+        return None
+    row = get_db().execute("SELECT visitor_id FROM users WHERE id = ?", (user_id,)).fetchone()
+    return row["visitor_id"] if row else None
+
+
 def get_visitor_id(*, create=True):
     """署名済みCookieを検証する。フォームからvisitor_idを受け取らない。"""
+    if "ds_visitor_id" not in g and (account_visitor := _logged_in_visitor_id()):
+        g.ds_visitor_id = account_visitor
     if "ds_visitor_id" not in g:
         visitor_id = None
         cookie = request.cookies.get(COOKIE_NAME)

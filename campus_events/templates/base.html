@@ -24,11 +24,20 @@
         {% include "ds/_nav_links.html" %}
         <a href="{{ url_for('public.submit') }}">イベントを応募</a>
         <a href="{{ url_for('public.status') }}">審査状況</a>
+        {% if current_user %}
+          <a href="{{ url_for('accounts.mypage') }}" class="nav-user">マイページ</a>
+          <form method="post" action="{{ url_for('accounts.logout') }}" class="inline">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button class="link-button">ログアウト</button>
+          </form>
+        {% elif login_available %}
+          <a href="{{ url_for('accounts.login', next=request.path) }}" class="nav-login">ログイン</a>
+        {% endif %}
         {% if session.is_admin %}
           <a href="{{ url_for('admin.dashboard') }}" class="nav-admin">学生課管理</a>
           <form method="post" action="{{ url_for('admin.logout') }}" class="inline">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-            <button class="link-button">ログアウト</button>
+            <button class="link-button">学生課ログアウト</button>
           </form>
         {% endif %}
       </nav>

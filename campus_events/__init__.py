@@ -28,6 +28,16 @@ def create_app(test_config=None):
         DS_VIEW_WEIGHT=1.0,
         DS_VIEW_CAP=3,
         DS_FAVORITE_WEIGHT=5.0,
+        DS_REGISTRATION_WEIGHT=8.0,
+        # 学生の Google ログイン。両方を設定するとログインボタンが有効になる
+        GOOGLE_CLIENT_ID=os.environ.get("GOOGLE_CLIENT_ID", ""),
+        GOOGLE_CLIENT_SECRET=os.environ.get("GOOGLE_CLIENT_SECRET", ""),
+        GOOGLE_REDIRECT_URI=os.environ.get("GOOGLE_REDIRECT_URI", ""),
+        ALLOWED_EMAIL_DOMAIN=os.environ.get("ALLOWED_EMAIL_DOMAIN", "st.kitasato-u.ac.jp"),
+        # Google の設定なしで動作確認するための開発用ログイン。人に公開するときは必ず無効にする
+        ALLOW_DEV_LOGIN=os.environ.get("ALLOW_DEV_LOGIN") == "1",
+        PERMANENT_SESSION_LIFETIME=30 * 24 * 60 * 60,
+        SESSION_COOKIE_SAMESITE="Lax",
     )
     if test_config:
         app.config.update(test_config)
@@ -79,12 +89,13 @@ def create_app(test_config=None):
         map_info=places.map_info,
     )
 
-    from . import admin, behavior, data_science, public
+    from . import accounts, admin, behavior, data_science, public
 
     app.register_blueprint(public.bp)
     app.register_blueprint(admin.bp)
     app.register_blueprint(data_science.bp)
     behavior.init_app(app)
+    accounts.init_app(app)
     from .seed_ds import seed_ds_demo_command
     app.cli.add_command(seed_ds_demo_command)
     return app

@@ -214,3 +214,20 @@ label.checkbox input { width: auto; margin: 0; }
 .campus-map.is-editable .campus-pin:not(.is-active) .campus-pin-label { display: none; }
 .pin-form { margin-top: 10px; }
 .button:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ログイン・マイページ */
+.nav-login { color: var(--primary-dark) !important; border: 1px solid var(--primary); border-radius: 999px; padding: 2px 12px; }
+.nav-user { font-weight: 800; }
+.login-card { display: grid; gap: 14px; }
+.login-card h1 { margin: 0; }
+.login-card p { margin: 0; }
+.google-button { text-align: center; }
+.dev-login { border-top: 1px dashed var(--border); padding-top: 14px; }
+.dev-warning { background: var(--warn-bg); color: var(--warn-text); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+.login-privacy summary { cursor: pointer; font-weight: 700; color: var(--primary-dark); }
+.login-privacy ul { margin: 8px 0 0; padding-left: 1.2em; font-size: 14px; }
+.registered-message { background: #dcfce7; color: #166534; border-radius: 8px; padding: 10px 14px; font-weight: 700; }
+.table-scroll { overflow-x: auto; }
+.submission-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.submission-list li { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; }
+.submission-list li > div:first-child { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }

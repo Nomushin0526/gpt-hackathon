@@ -65,7 +65,9 @@
   {% else %}
     {% include "_capacity.html" %}
     {% if event.registration_info %}<p class="pre">{{ event.registration_info }}</p>{% endif %}
-    {% if not is_open_for_registration(event) %}
+    {% if my_registration %}
+      <p class="registered-message">✓ このイベントに申込済みです({{ my_registration.created_at|dt }})。取り消す場合は<a href="{{ url_for('accounts.mypage') }}">マイページ</a>から行えます。</p>
+    {% elif not is_open_for_registration(event) %}
       <p class="small">申込受付は終了しました。</p>
     {% elif is_full(event) %}
       <p class="full-message">定員に達したため、申込を締め切りました。</p>
@@ -74,16 +76,23 @@
         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         <div class="grid-2">
           <label>氏名 <span class="req">必須</span>
-            <input name="name" required maxlength="50" value="{{ form.name or '' }}" autocomplete="name">
+            <input name="name" required maxlength="50" value="{{ form.name or (current_user.name if current_user else '') }}" autocomplete="name">
           </label>
           <label>学籍番号
             <input name="student_number" maxlength="20" value="{{ form.student_number or '' }}">
           </label>
         </div>
-        <label>メールアドレス <span class="req">必須</span>
-          <input type="email" name="email" required maxlength="200" value="{{ form.email or '' }}" autocomplete="email">
-          <small>主催者からの連絡に使われます。氏名・メールアドレスは公開されません。</small>
-        </label>
+        {% if current_user %}
+          <p class="small">ログイン中のアカウント <strong>{{ current_user.email }}</strong> で申し込みます。氏名・メールアドレスは公開されません。</p>
+        {% else %}
+          <label>メールアドレス <span class="req">必須</span>
+            <input type="email" name="email" required maxlength="200" value="{{ form.email or '' }}" autocomplete="email">
+            <small>主催者からの連絡に使われます。氏名・メールアドレスは公開されません。</small>
+          </label>
+          {% if login_available %}
+            <p class="small"><a href="{{ url_for('accounts.login', next=request.path) }}">ログイン</a>すると、申込の確認・取消をマイページから行え、おすすめにも反映されます。</p>
+          {% endif %}
+        {% endif %}
         <button class="button">このイベントに申し込む</button>
       </form>
     {% endif %}

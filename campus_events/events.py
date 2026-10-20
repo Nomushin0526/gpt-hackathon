@@ -204,17 +204,18 @@ _SELECT_EVENTS = (
 )
 
 
-def create_event(data, *, source, status, poster_filename=None):
+def create_event(data, *, source, status, poster_filename=None, submitted_by_user_id=None):
     db = get_db()
     ts = now_jst().strftime(DATETIME_FORMAT)
     receipt = generate_receipt_code()
     while db.execute("SELECT 1 FROM events WHERE receipt_code = ?", (receipt,)).fetchone():
         receipt = generate_receipt_code()
     columns = _EVENT_COLUMNS + [
-        "poster_filename", "source", "status", "receipt_code", "created_at", "updated_at",
+        "poster_filename", "source", "status", "receipt_code", "submitted_by_user_id",
+        "created_at", "updated_at",
     ]
     values = [data.get(c) for c in _EVENT_COLUMNS] + [
-        poster_filename, source, status, receipt, ts, ts,
+        poster_filename, source, status, receipt, submitted_by_user_id, ts, ts,
     ]
     cur = db.execute(
         f"INSERT INTO events ({', '.join(columns)}) VALUES ({', '.join('?' * len(columns))})",
@@ -326,13 +327,13 @@ def register(event_id, data):
     try:
         cur = db.execute(
             """
-            INSERT INTO registrations (event_id, name, email, student_number, created_at)
-            SELECT ?, ?, ?, ?, ?
+            INSERT INTO registrations (event_id, name, email, student_number, user_id, created_at)
+            SELECT ?, ?, ?, ?, ?, ?
             WHERE (SELECT capacity FROM events WHERE id = ?) IS NULL
                OR (SELECT COUNT(*) FROM registrations WHERE event_id = ?)
                   < (SELECT capacity FROM events WHERE id = ?)
             """,
-            (event_id, data["name"], data["email"], data["student_number"],
+            (event_id, data["name"], data["email"], data["student_number"], data.get("user_id"),
              now_jst().strftime(DATETIME_FORMAT), event_id, event_id, event_id),
         )
     except sqlite3.IntegrityError:

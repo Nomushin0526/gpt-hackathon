@@ -50,6 +50,22 @@ def migrate_db():
     if "location_lat" not in columns:
         db.execute("ALTER TABLE events ADD COLUMN location_lat REAL")
         db.execute("ALTER TABLE events ADD COLUMN location_lng REAL")
+    if "users" not in tables:
+        db.executescript(
+            """
+            CREATE TABLE users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL UNIQUE,
+                name TEXT NOT NULL,
+                google_sub TEXT NOT NULL UNIQUE,
+                visitor_id TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL,
+                last_login_at TEXT NOT NULL
+            );
+            """
+        )
+    if "submitted_by_user_id" not in columns:
+        db.execute("ALTER TABLE events ADD COLUMN submitted_by_user_id INTEGER REFERENCES users (id) ON DELETE SET NULL")
     if "campus_pins" not in tables:
         db.execute("CREATE TABLE campus_pins (name TEXT PRIMARY KEY, x REAL NOT NULL, y REAL NOT NULL)")
     if "registrations" not in tables:
@@ -66,6 +82,9 @@ def migrate_db():
             );
             """
         )
+    reg_columns = {r["name"] for r in db.execute("PRAGMA table_info(registrations)")}
+    if "user_id" not in reg_columns:
+        db.execute("ALTER TABLE registrations ADD COLUMN user_id INTEGER REFERENCES users (id) ON DELETE SET NULL")
     db.commit()
     _migrate_data_science_tables()
 

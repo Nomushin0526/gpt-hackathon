@@ -6,6 +6,8 @@ from flask import (
 )
 
 from . import behavior, events, places
+from .accounts import current_user
+from .db import get_db
 from .recommendations import get_recommendations
 
 bp = Blueprint("public", __name__)
@@ -52,7 +54,20 @@ def detail(event_id):
     event = _public_event_or_404(event_id)
     if request.method == "GET":
         behavior.record_view(event_id)
-    return render_template("detail.html", event=event, form={})
+    return render_template(
+        "detail.html", event=event, form={}, my_registration=_my_registration(event_id)
+    )
+
+
+def _my_registration(event_id):
+    """ログイン中の学生がこのイベントに申込済みなら、その申込。"""
+    user = current_user()
+    if not user:
+        return None
+    return get_db().execute(
+        "SELECT * FROM registrations WHERE event_id = ? AND (user_id = ? OR email = ?)",
+        (event_id, user["id"], user["email"]),
+    ).fetchone()
 
 
 @bp.route("/events/<int:event_id>/register", methods=["POST"])
@@ -61,7 +76,15 @@ def register(event_id):
     if not events.is_open_for_registration(event):
         flash("このイベントはこのサイトでの参加申込を受け付けていません。", "error")
         return redirect(url_for("public.detail", event_id=event_id))
-    data, errors = events.validate_registration_form(request.form)
+    form = request.form
+    user = current_user()
+    if user:
+        # ログイン中は、アカウントのメールアドレスで申し込む(他人のアドレスでは申し込めない)
+        form = request.form.copy()
+        form["email"] = user["email"]
+    data, errors = events.validate_registration_form(form)
+    if user:
+        data["user_id"] = user["id"]
     if not errors:
         try:
             events.register(event_id, data)
@@ -71,7 +94,8 @@ def register(event_id):
         for e in errors:
             flash(e, "error")
         return render_template(
-            "detail.html", event=events.get_event(event_id), form=request.form
+            "detail.html", event=events.get_event(event_id), form=request.form,
+            my_registration=_my_registration(event_id),
         ), 400
     flash(f"「{event['title']}」への参加申込を受け付けました。", "info")
     return redirect(url_for("public.detail", event_id=event_id))
@@ -121,11 +145,14 @@ def submit():
             for e in errors:
                 flash(e, "error")
             return render_template("submit.html", form=request.form), 400
+        user = current_user()
         _, receipt = events.create_event(
-            data, source="student", status="pending", poster_filename=poster
+            data, source="student", status="pending", poster_filename=poster,
+            submitted_by_user_id=user["id"] if user else None,
         )
         return redirect(url_for("public.submitted", code=receipt))
-    return render_template("submit.html", form={})
+    user = current_user()
+    return render_template("submit.html", form={"contact_email": user["email"]} if user else {})
 
 
 @bp.route("/submit/done/<code>")

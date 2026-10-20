@@ -3,6 +3,19 @@ DROP TABLE IF EXISTS event_favorites;
 DROP TABLE IF EXISTS registrations;
 DROP TABLE IF EXISTS campus_pins;
 DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS users;
+
+-- 大学の Google アカウントでログインした学生
+-- visitor_id: 閲覧履歴・お気に入りの記録に使う ID。ログイン中はどの端末でもこの ID を使う
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    google_sub TEXT NOT NULL UNIQUE,
+    visitor_id TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL,
+    last_login_at TEXT NOT NULL
+);
 
 -- 公開イベントと学生からの応募を 1 テーブルで管理する。
 -- status: pending(審査待ち) / approved(公開中) / rejected(差し戻し)
@@ -30,6 +43,7 @@ CREATE TABLE events (
     status TEXT NOT NULL DEFAULT 'pending',
     review_comment TEXT,
     receipt_code TEXT UNIQUE,
+    submitted_by_user_id INTEGER REFERENCES users (id) ON DELETE SET NULL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
@@ -43,6 +57,7 @@ CREATE TABLE registrations (
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     student_number TEXT,
+    user_id INTEGER REFERENCES users (id) ON DELETE SET NULL,
     created_at TEXT NOT NULL,
     UNIQUE (event_id, email)
 );
