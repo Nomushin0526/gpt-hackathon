@@ -1,0 +1,1015 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>イベント掲示板 機能説明書</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700;900&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: 左に固定の目次、右に章ごとの本文。狭い画面では目次を本文の上へ */
+:root {
+  --bg: #f5f7f6;
+  --surface: #ffffff;
+  --fg: #1c2725;
+  --muted: #5b6b68;
+  --line: #d9e2df;
+  --accent: #0f766e;
+  --accent-soft: #e3f2ef;
+  --warn: #c2410c;
+  --warn-soft: #fff1e6;
+  --danger: #b42318;
+  --danger-soft: #fdeceb;
+  --office: #075985;
+  --office-soft: #e0f0fb;
+  --student: #9d174d;
+  --student-soft: #fbe7f1;
+  --code-bg: #eef3f1;
+  --font-display: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  --font-body: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111816; --surface: #18211f; --fg: #e4ece9; --muted: #9db0ab; --line: #2c3a37;
+    --accent: #4fd1bd; --accent-soft: #163330; --warn: #fb9a5b; --warn-soft: #3a2416;
+    --danger: #f2877d; --danger-soft: #3a1c1a; --office: #7cc4f2; --office-soft: #15293a;
+    --student: #f08bb8; --student-soft: #3a1a2a; --code-bg: #1f2b28; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111816; --surface: #18211f; --fg: #e4ece9; --muted: #9db0ab; --line: #2c3a37;
+  --accent: #4fd1bd; --accent-soft: #163330; --warn: #fb9a5b; --warn-soft: #3a2416;
+  --danger: #f2877d; --danger-soft: #3a1c1a; --office: #7cc4f2; --office-soft: #15293a;
+  --student: #f08bb8; --student-soft: #3a1a2a; --code-bg: #1f2b28; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.8;
+}
+a { color: var(--accent); }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+.wrap {
+  max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 64px;
+  display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 40px;
+}
+@media (max-width: 860px) { .wrap { grid-template-columns: minmax(0, 1fr); gap: 24px; } }
+
+/* 目次 */
+.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; font-size: 13px; }
+@media (max-width: 860px) { .toc { position: static; max-height: none; } }
+.toc-title { font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: .12em; color: var(--muted); margin: 0 0 8px; }
+.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: toc; }
+.toc li a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 8px; border-radius: 6px; text-decoration: none; color: var(--fg); }
+.toc li a:hover { background: var(--accent-soft); }
+.toc li a span { color: var(--muted); font-family: var(--font-mono); font-size: 12px; padding-top: 1px; }
+@media (max-width: 860px) {
+  .toc details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+  .toc ol { margin-top: 8px; }
+}
+@media (min-width: 861px) { .toc details > summary { display: none; } }
+.toc summary { cursor: pointer; font-family: var(--font-display); font-weight: 700; }
+
+/* 本文 */
+main { min-width: 0; }
+header.doc-head { padding-bottom: 24px; border-bottom: 2px solid var(--fg); margin-bottom: 8px; }
+.eyebrow { font-family: var(--font-display); font-size: 12px; letter-spacing: .14em; color: var(--accent); font-weight: 700; margin: 0 0 6px; }
+h1 { font-family: var(--font-display); font-weight: 900; font-size: clamp(26px, 4.4vw, 38px); line-height: 1.3; margin: 0 0 12px; text-wrap: balance; }
+.lede { max-width: 62ch; color: var(--muted); margin: 0 0 16px; }
+.meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px 24px; font-size: 13px; }
+.meta-grid div { display: grid; gap: 0; }
+.meta-grid dt { color: var(--muted); font-size: 12px; }
+.meta-grid dd { margin: 0; font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }
+
+section.chapter { padding-top: 40px; scroll-margin-top: 16px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1.4; margin: 0 0 16px; display: flex; gap: 12px; align-items: baseline; text-wrap: balance; }
+h2 .num { font-family: var(--font-mono); font-size: 14px; color: var(--accent); font-weight: 600; }
+h3 { font-family: var(--font-display); font-weight: 700; font-size: 18px; margin: 28px 0 10px; padding-left: 10px; border-left: 3px solid var(--accent); line-height: 1.4; }
+h4 { font-size: 15px; margin: 18px 0 6px; }
+p, ul, ol { max-width: 72ch; }
+ul, ol { padding-left: 1.4em; }
+li { margin: 2px 0; }
+li::marker { color: var(--muted); }
+
+code, .mono { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); padding: 1px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+pre.cmd { font-family: var(--font-mono); font-size: 13px; background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; overflow-x: auto; line-height: 1.7; margin: 8px 0 16px; }
+
+.table-wrap { overflow-x: auto; margin: 10px 0 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-display); font-weight: 700; font-size: 13px; background: var(--accent-soft); white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+td.nowrap { white-space: nowrap; }
+.num-col { font-variant-numeric: tabular-nums; text-align: right; }
+
+/* アプリと同じバッジの見本 */
+.b { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 9px; border-radius: 999px; white-space: nowrap; line-height: 1.8; }
+.b-req { background: #ea580c; color: #fff; border-radius: 5px; }
+.b-full { background: #b42318; color: #fff; border-radius: 5px; }
+.b-free { background: var(--code-bg); color: var(--muted); border-radius: 5px; }
+.b-cat { background: var(--code-bg); color: var(--muted); }
+.b-office { background: var(--office-soft); color: var(--office); }
+.b-student { background: var(--student-soft); color: var(--student); }
+.b-fav { background: var(--warn-soft); color: var(--warn); }
+.b-pending { background: var(--warn-soft); color: var(--warn); }
+.b-approved { background: var(--accent-soft); color: var(--accent); }
+.b-rejected { background: var(--danger-soft); color: var(--danger); }
+.who { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 8px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); margin-right: 4px; white-space: nowrap; }
+
+.note { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 12px 16px; margin: 12px 0 18px; max-width: 72ch; }
+.note.warn { border-color: var(--warn); background: var(--warn-soft); }
+.note.danger { border-color: var(--danger); background: var(--danger-soft); }
+.note strong:first-child { display: block; margin-bottom: 2px; }
+.note p, .note ul { margin: 4px 0; }
+
+.steps { counter-reset: step; list-style: none; padding: 0; display: grid; gap: 8px; }
+.steps > li { counter-increment: step; position: relative; padding-left: 38px; min-width: 0; overflow-wrap: anywhere; }
+.steps > li::before { content: counter(step); position: absolute; left: 0; top: 3px; font-family: var(--font-mono); font-size: 12px; font-weight: 600; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--surface); }
+
+.formula { font-family: var(--font-mono); font-size: 13px; background: var(--surface); border: 1px dashed var(--accent); border-radius: 8px; padding: 10px 14px; margin: 8px 0 14px; overflow-x: auto; white-space: nowrap; }
+
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin: 12px 0 18px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.panel h4 { margin: 0 0 6px; font-family: var(--font-display); }
+.panel ul { margin: 0; padding-left: 1.2em; }
+
+.mermaid-box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; margin: 10px 0 18px; }
+pre.mermaid { margin: 0; font-family: var(--font-body); background: none; }
+
+.branch { display: grid; gap: 6px; font-family: var(--font-mono); font-size: 13px; margin: 10px 0 18px; }
+.branch div { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; overflow-wrap: anywhere; }
+.branch .lv1 { margin-left: 20px; } .branch .lv2 { margin-left: 40px; }
+.branch small { font-family: var(--font-body); color: var(--muted); display: block; font-size: 12px; }
+
+footer.doc-foot { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+</style>
+
+<style>body{margin:0}</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" aria-label="目次">
+    <details open>
+      <summary>目次</summary>
+      <p class="toc-title">CONTENTS</p>
+      <ol>
+        <li><a href="#overview"><span>01</span>アプリの目的と全体像</a></li>
+        <li><a href="#roles"><span>02</span>利用者と権限</a></li>
+        <li><a href="#urls"><span>03</span>画面一覧</a></li>
+        <li><a href="#student"><span>04</span>学生向けの機能</a></li>
+        <li><a href="#office"><span>05</span>学生課向けの機能</a></li>
+        <li><a href="#map"><span>06</span>開催場所と地図</a></li>
+        <li><a href="#ds"><span>07</span>おすすめ・お気に入り・分析</a></li>
+        <li><a href="#login"><span>08</span>学生のログインとマイページ</a></li>
+        <li><a href="#audit"><span>09</span>学生課の担当者と操作履歴</a></li>
+        <li><a href="#inputs"><span>10</span>入力項目とチェック</a></li>
+        <li><a href="#db"><span>11</span>データベース</a></li>
+        <li><a href="#status"><span>12</span>イベントの状態</a></li>
+        <li><a href="#security"><span>13</span>セキュリティと個人情報</a></li>
+        <li><a href="#config"><span>14</span>設定とコマンド</a></li>
+        <li><a href="#files"><span>15</span>ファイル構成</a></li>
+        <li><a href="#branches"><span>16</span>ブランチ構成</a></li>
+        <li><a href="#tests"><span>17</span>テスト</a></li>
+        <li><a href="#limits"><span>18</span>制約と今後の課題</a></li>
+      </ol>
+    </details>
+  </nav>
+
+  <main>
+    <header class="doc-head">
+      <p class="eyebrow">北里大学 相模原キャンパス ／ 機能説明書</p>
+      <h1>相模原キャンパス イベント掲示板</h1>
+      <p class="lede">紙のポスターでしか告知されていなかった学内イベントをまとめて見られるようにし、学生や団体が企画したイベントを学生課へ気軽に掲載申請できるようにする Web アプリの、機能・取り扱い・処理の説明です。</p>
+      <dl class="meta-grid">
+        <div><dt>対象のコード</dt><dd>feature/map-fixes (8003ec9)</dd></div>
+        <div><dt>リポジトリ</dt><dd>Nomushin0526/gpt-hackathon</dd></div>
+        <div><dt>更新日</dt><dd>2026-10-21</dd></div>
+      </dl>
+    </header>
+
+    <div class="note warn">
+      <strong>main ブランチとの違い</strong>
+      第 6〜9 章(地図、おすすめ・データ分析、ログイン、操作履歴)は、まだ main に入っていません。どの機能がどのブランチにあるかは<a href="#branches">第 16 章</a>を参照してください。
+    </div>
+
+    <!-- 01 -->
+    <section class="chapter" id="overview">
+      <h2><span class="num">01</span>アプリの目的と全体像</h2>
+      <h3>目的</h3>
+      <ol>
+        <li>紙のポスターでしか告知されておらず学生に知られていないイベントを、Web 上でまとめて見られるようにする。</li>
+        <li>学生個人や部活動・サークルが企画したイベントを、学生課へ気軽に掲載申請できる窓口をつくる。</li>
+      </ol>
+
+      <h3>全体の流れ</h3>
+      <div class="mermaid-box">
+<pre class="mermaid">
+flowchart LR
+  A["学生・団体<br>イベントを応募"] --> B["審査待ち"]
+  B -->|学生課が承認| C["公開中"]
+  B -->|学生課が差し戻し| D["差し戻し<br>(コメント付き)"]
+  E["学生課<br>イベントを登録<br>(紙掲示物の転載など)"] --> C
+  C --> F["学生<br>一覧・詳細で閲覧<br>参加申込・お気に入り"]
+  A -.受付番号で確認.-> B
+  A -.受付番号で確認.-> D
+</pre>
+      </div>
+
+      <h3>技術構成</h3>
+      <div class="table-wrap"><table>
+        <tr><th>区分</th><th>内容</th></tr>
+        <tr><td>言語・フレームワーク</td><td>Python 3.11 以上 ／ Flask 3</td></tr>
+        <tr><td>データベース</td><td>SQLite(ファイル 1 つ: <code>instance/campus_events.sqlite</code>)</td></tr>
+        <tr><td>画面</td><td>サーバー側で HTML を生成(Jinja2 テンプレート)＋少量の JavaScript</td></tr>
+        <tr><td>おすすめの計算</td><td>scikit-learn ／ NumPy ／ SciPy</td></tr>
+        <tr><td>外部サービス</td><td>Google マップ(埋め込み表示、API キー不要)、Photon(OpenStreetMap ベースの場所検索)</td></tr>
+        <tr><td>時刻</td><td>すべて日本時間(Asia/Tokyo)</td></tr>
+      </table></div>
+    </section>
+
+    <!-- 02 -->
+    <section class="chapter" id="roles">
+      <h2><span class="num">02</span>利用者と権限</h2>
+      <div class="table-wrap"><table>
+        <tr><th>利用者</th><th>ログイン</th><th>できること</th></tr>
+        <tr><td class="nowrap">学生(閲覧者)</td><td class="nowrap">任意<br><small>大学の Google</small></td><td>イベントの閲覧・検索、参加申込、お気に入り、おすすめの閲覧、カレンダー登録。ログインするとマイページと端末をまたいだ記録が使える</td></tr>
+        <tr><td class="nowrap">学生・団体(企画者)</td><td class="nowrap">任意</td><td>イベントの応募(掲載申請)、受付番号による審査状況の確認。ログイン中の応募はマイページでも確認できる</td></tr>
+        <tr><td class="nowrap">学生課</td><td class="nowrap">必須<br><small>Google または共通パスワード＋担当者名</small></td><td>審査、イベントの登録・編集・削除、申込者管理、キャンパスマップのピン設定、データ分析、操作履歴の確認</td></tr>
+      </table></div>
+      <ul>
+        <li>学生のログインは任意です。ログインしなくても、閲覧・申込・応募はこれまでどおりできます(<a href="#login">第 8 章</a>)。</li>
+        <li>学生課は、登録した職員の Google アカウント、または共通パスワード＋担当者名でログインし、操作は担当者名つきで記録されます(<a href="#audit">第 9 章</a>)。</li>
+        <li>おすすめ・お気に入りは、ログインしていなければブラウザーごと、ログイン中はアカウントごとに記録します(<a href="#ds">第 7 章</a>)。</li>
+      </ul>
+    </section>
+
+    <!-- 03 -->
+    <section class="chapter" id="urls">
+      <h2><span class="num">03</span>画面一覧</h2>
+      <p><span class="who">POST</span>はフォームのボタンから送信する操作で、ブラウザーで直接開く画面ではありません。</p>
+      <h3>学生向け</h3>
+      <div class="table-wrap"><table>
+        <tr><th>URL</th><th>内容</th></tr>
+        <tr><td><code>/</code></td><td>イベント一覧(検索・絞り込み、おすすめ 3 件)</td></tr>
+        <tr><td><code>/events/&lt;id&gt;</code></td><td>イベント詳細(地図、参加申込フォーム)</td></tr>
+        <tr><td><span class="who">POST</span><code>/events/&lt;id&gt;/register</code></td><td>参加申込の送信</td></tr>
+        <tr><td><code>/events/&lt;id&gt;/calendar.ics</code></td><td>カレンダー用ファイル</td></tr>
+        <tr><td><span class="who">POST</span><code>/events/&lt;id&gt;/favorite</code></td><td>お気に入りの保存・解除</td></tr>
+        <tr><td><code>/submit</code></td><td>イベントの応募フォーム</td></tr>
+        <tr><td><code>/submit/done/&lt;受付番号&gt;</code></td><td>応募完了(受付番号の表示)</td></tr>
+        <tr><td><code>/status?code=&lt;受付番号&gt;</code></td><td>審査状況の確認</td></tr>
+        <tr><td><code>/recommendations</code></td><td>あなたへのおすすめ(12 件まで)</td></tr>
+        <tr><td><code>/favorites</code></td><td>お気に入り一覧</td></tr>
+        <tr><td><span class="who">POST</span><code>/preferences/clear-history</code></td><td>このブラウザーの閲覧履歴を削除</td></tr>
+        <tr><td><span class="who">POST</span><code>/preferences/clear-all</code></td><td>閲覧履歴とお気に入りをすべて削除</td></tr>
+        <tr><td><code>/posters/&lt;ファイル名&gt;</code></td><td>ポスター画像</td></tr>
+        <tr><td><code>/api/registration-counts?ids=…</code></td><td>申込人数(JSON、リアルタイム表示用)</td></tr>
+        <tr><td><code>/api/places?q=…</code></td><td>開催場所の候補(JSON、入力補助用)</td></tr>
+        <tr><td><code>/login</code></td><td>学生のログイン画面</td></tr>
+        <tr><td><code>/login/google</code> ／ <code>/login/google/callback</code></td><td>Google ログインの開始 ／ Google からの戻り先(<code>?for=staff</code> で学生課用)</td></tr>
+        <tr><td><span class="who">POST</span><code>/login/dev</code></td><td>開発用ログイン(<code>ALLOW_DEV_LOGIN=1</code> のときだけ)</td></tr>
+        <tr><td><span class="who">POST</span><code>/logout</code></td><td>学生のログアウト</td></tr>
+        <tr><td><code>/mypage</code></td><td>マイページ(参加申込・応募したイベント)</td></tr>
+        <tr><td><span class="who">POST</span><code>/mypage/registrations/&lt;id&gt;/cancel</code></td><td>自分の参加申込の取消</td></tr>
+      </table></div>
+
+      <h3>学生課向け(<code>/admin/login</code> 以外はログインが必要)</h3>
+      <div class="table-wrap"><table>
+        <tr><th>URL</th><th>内容</th></tr>
+        <tr><td><code>/admin/login</code></td><td>ログイン</td></tr>
+        <tr><td><span class="who">POST</span><code>/admin/logout</code></td><td>ログアウト</td></tr>
+        <tr><td><code>/admin/?tab=pending|approved|rejected</code></td><td>管理画面トップ(タブ別の一覧)</td></tr>
+        <tr><td><code>/admin/events/&lt;id&gt;</code></td><td>応募内容の確認・審査・申込者一覧</td></tr>
+        <tr><td><span class="who">POST</span><code>/admin/events/&lt;id&gt;/status</code></td><td>承認・差し戻し・審査待ちに戻す</td></tr>
+        <tr><td><code>/admin/events/new</code></td><td>イベントの登録</td></tr>
+        <tr><td><code>/admin/events/&lt;id&gt;/edit</code></td><td>イベントの編集</td></tr>
+        <tr><td><span class="who">POST</span><code>/admin/events/&lt;id&gt;/delete</code></td><td>イベントの削除</td></tr>
+        <tr><td><code>/admin/events/&lt;id&gt;/registrations.csv</code></td><td>参加申込者の CSV</td></tr>
+        <tr><td><span class="who">POST</span><code>/admin/registrations/&lt;id&gt;/delete</code></td><td>参加申込の取消</td></tr>
+        <tr><td><code>/admin/campus-map</code></td><td>キャンパスマップのピン設定</td></tr>
+        <tr><td><code>/admin/analytics</code></td><td>データ分析</td></tr>
+        <tr><td><code>/admin/analytics.csv</code> ／ <code>.json</code></td><td>データ分析の CSV ／ JSON</td></tr>
+        <tr><td><code>/admin/audit</code></td><td>操作履歴(誰が・いつ・何を)</td></tr>
+      </table></div>
+    </section>
+
+    <!-- 04 -->
+    <section class="chapter" id="student">
+      <h2><span class="num">04</span>学生向けの機能</h2>
+
+      <h3>4-1 イベント一覧(トップページ)</h3>
+      <p>表示するのは<strong>公開中(承認済み)</strong>のイベントだけです。審査待ち・差し戻しは表示しません。カードには開催日、バッジ、イベント名、日時、場所、主催者、定員・申込人数が並びます。</p>
+      <h4>バッジの種類</h4>
+      <div class="table-wrap"><table>
+        <tr><th>バッジ</th><th>表示される条件</th></tr>
+        <tr><td><span class="b b-req">✍ 要申込</span></td><td>参加方法が「このサイトで申込」または「外部で申込」</td></tr>
+        <tr><td><span class="b b-full">満員</span></td><td>「このサイトで申込」で、申込人数が定員に達した</td></tr>
+        <tr><td><span class="b b-free">申込不要</span></td><td>参加方法が「申込不要」</td></tr>
+        <tr><td><span class="b b-cat">就職・キャリア</span></td><td>カテゴリ名(常に表示)</td></tr>
+        <tr><td><span class="b b-office">学生課掲載</span></td><td>学生課が登録したイベント</td></tr>
+        <tr><td><span class="b b-student">学生企画</span></td><td>学生・団体の応募から公開したイベント</td></tr>
+        <tr><td><span class="b b-fav">★ お気に入り</span></td><td>このブラウザーでお気に入りに保存済み</td></tr>
+      </table></div>
+      <h4>検索・絞り込み(組み合わせ可)</h4>
+      <div class="table-wrap"><table>
+        <tr><th>条件</th><th>内容</th></tr>
+        <tr><td>キーワード</td><td>イベント名・内容・場所・主催者名に含まれるもの(部分一致)</td></tr>
+        <tr><td>カテゴリ</td><td>9 種類から選択(<a href="#inputs">第 10 章</a>)</td></tr>
+        <tr><td>主催者種別</td><td>5 種類から選択(<a href="#inputs">第 10 章</a>)</td></tr>
+        <tr><td>これから開催</td><td>終了日時(無ければ開始日時)が今以降。開始の近い順</td></tr>
+        <tr><td>1 週間以内</td><td>上の条件かつ、開始日時が今から 7 日以内</td></tr>
+        <tr><td>1 か月以内</td><td>上の条件かつ、開始日時が今から 31 日以内</td></tr>
+        <tr><td>終了したイベント</td><td>終了日時(無ければ開始日時)が今より前。新しい順</td></tr>
+      </table></div>
+      <p><strong>おすすめ欄:</strong>検索条件を何も指定していない通常のトップページ(期間「これから開催」)のときだけ、上部におすすめを 3 件表示します。出せるおすすめが無ければ表示しません。</p>
+
+      <h3>4-2 イベント詳細</h3>
+      <ul>
+        <li>公開中のイベントだけ表示します。審査待ち・差し戻し・存在しない ID は「ページが見つかりません」(404)。</li>
+        <li>表示項目: バッジ、イベント名、日時、場所、主催(名称と種別)、参加方法、定員、問い合わせ先メール、内容、ポスター画像、地図(<a href="#map">第 6 章</a>)。</li>
+        <li>「☆ お気に入りに保存」ボタン(<a href="#ds">第 7 章</a>)。</li>
+        <li>学生課としてログイン中は「管理画面で開く」リンクが出ます。</li>
+        <li>学生課としてログインしていない人が開くと、閲覧履歴が 1 件記録されます(<a href="#ds">第 7 章</a>)。</li>
+      </ul>
+      <h4>ページ下部の「参加申込」欄</h4>
+      <div class="table-wrap"><table>
+        <tr><th>参加方法</th><th>表示内容</th></tr>
+        <tr><td>申込不要</td><td>「申込は不要です。当日、直接会場へお越しください。」</td></tr>
+        <tr><td>外部で申込</td><td>申込方法・申込先(Google フォームの URL など)</td></tr>
+        <tr><td>このサイトで申込</td><td>申込人数と申込フォーム(4-3)</td></tr>
+      </table></div>
+
+      <h3>4-3 参加申込(このサイトで受け付ける場合)</h3>
+      <p><strong>入力項目:</strong>氏名(必須・50 文字以内)、学籍番号(任意・20 文字以内)、メールアドレス(必須・200 文字以内)</p>
+      <h4>受け付ける条件(すべて満たすとき)</h4>
+      <ul>
+        <li>イベントが公開中</li>
+        <li>参加方法が「このサイトで参加申込を受け付ける」</li>
+        <li>開始日時より前(開始後は「申込受付は終了しました」)</li>
+        <li>定員に空きがある(定員が空欄なら人数制限なし)</li>
+      </ul>
+      <h4>処理の流れ</h4>
+      <ol class="steps">
+        <li>入力をチェックします。メールアドレスは小文字にそろえて保存します。</li>
+        <li>「定員に空きがあるか」の確認と登録を、データベースへの 1 回の命令で同時に行います。複数人が同時に申し込んでも定員を超えません。</li>
+        <li>同じイベントに同じメールアドレスで申し込むと「このメールアドレスはすでに申込済みです」(データベースの一意制約でも防止)。</li>
+        <li>定員に達していれば「定員に達したため申込を締め切りました」。</li>
+        <li>成功すると詳細ページに戻り「参加申込を受け付けました」と表示します。</li>
+      </ol>
+      <div class="note">
+        <strong>補足</strong>
+        <ul>
+          <li>申込者の氏名・メールアドレス・学籍番号は公開されません(学生課のみ閲覧可)。</li>
+          <li>ログインしていれば、マイページから開始前まで自分で取り消せます(<a href="#login">第 8 章</a>)。ログインしていない申込は学生課が取り消します(5-6)。</li>
+          <li>ログイン中は、アカウントのメールアドレスで申し込みます(氏名も自動で入る)。申込済みのイベントでは「✓ 申込済み」と表示します。</li>
+          <li>申込完了のメール通知はありません。</li>
+        </ul>
+      </div>
+
+      <h3>4-4 申込人数のリアルタイム表示</h3>
+      <ul>
+        <li>一覧・詳細ページに「申込 ○ 名 / 定員 ○ 名 残り ○ 名」と残量バーを表示します。</li>
+        <li>バーの色: 通常は緑、80% 以上埋まるとオレンジ、満員で赤。</li>
+        <li>ページを開いている間、<strong>10 秒ごと</strong>に最新の人数を取得して表示を更新します。再読み込みしなくても他の人の申込が反映されます。</li>
+        <li>タブが裏に回っている間は更新を止め、表に戻った時点で更新します。</li>
+        <li>閲覧中に満員になると、バッジが <span class="b b-full">満員</span> に変わり、申込フォームが締切の表示に置き換わります。</li>
+        <li>人数は <code>/api/registration-counts</code> から取得します(1 回 100 件まで、公開中のみ、個人情報なし)。</li>
+      </ul>
+
+      <h3>4-5 カレンダーに追加(.ics)</h3>
+      <ul>
+        <li>詳細ページの「📅 カレンダーに追加(.ics)」で、iPhone・Android・Google カレンダー・Outlook などに取り込めるファイルをダウンロードできます。</li>
+        <li>イベント名、日時、場所、内容が入ります。終了日時が無い場合は開始から 1 時間とします。</li>
+      </ul>
+
+      <h3>4-6 イベントの応募(学生・団体 → 学生課)</h3>
+      <div class="grid-2">
+        <div class="panel"><h4>入力する内容</h4><ul>
+          <li>イベントの内容(名前、カテゴリ、内容、日時、場所)</li>
+          <li>参加方法・定員・申込先</li>
+          <li>主催者(団体名、種別、連絡先メール=必須)</li>
+          <li>ポスター画像(任意)</li>
+          <li>学生課への連絡事項(公開されない)</li>
+          <li>実施ルールへの同意(必須)</li>
+        </ul></div>
+        <div class="panel"><h4>受付番号</h4><ul>
+          <li>送信すると 8 文字の受付番号を発行</li>
+          <li>読み間違えやすい 0・O・1・I・L を使わない英数字</li>
+          <li>スクリーンショットなどで控えておく</li>
+          <li>紛失した場合に再確認する機能はない</li>
+        </ul></div>
+      </div>
+      <ol class="steps">
+        <li>入力をチェックします。誤りがあれば、入力内容を残したままエラーを表示します。</li>
+        <li>ポスター画像があれば、ランダムなファイル名に変えて保存します。</li>
+        <li>ステータス <span class="b b-pending">審査待ち</span>、種別 <span class="b b-student">学生企画</span> で登録します。</li>
+        <li>受付番号を完了画面に表示します。</li>
+      </ol>
+      <div class="note warn"><strong>画面に表示している注意</strong>この応募は「掲載の申請」です。教室・施設の使用許可が必要な場合は、別途学生課で所定の手続きを行う必要があります。</div>
+
+      <h3>4-7 審査状況の確認</h3>
+      <p>受付番号を入力すると、イベント名、開催日時、ステータスを表示します(大文字・小文字は区別しない)。学生課からのコメントがあれば表示します。審査した担当者の名前は表示しません。ログイン中に応募したイベントは、マイページでも確認できます。</p>
+      <div class="table-wrap"><table>
+        <tr><th>ステータス</th><th>表示される案内</th></tr>
+        <tr><td><span class="b b-pending">審査待ち</span></td><td>学生課で内容を確認しています</td></tr>
+        <tr><td><span class="b b-approved">公開中</span></td><td>公開ページへのリンク</td></tr>
+        <tr><td><span class="b b-rejected">差し戻し</span></td><td>コメントを確認し、修正のうえ再度応募してください(応募の修正機能はなく、新しく応募し直す)</td></tr>
+      </table></div>
+    </section>
+
+    <!-- 05 -->
+    <section class="chapter" id="office">
+      <h2><span class="num">05</span>学生課向けの機能(管理画面)</h2>
+
+      <h3>5-1 ログイン・ログアウト</h3>
+      <p><code>/admin/login</code>(画面下部の「学生課の方はこちら」)からログインします。方法は 2 通りで、どちらも担当者名が操作履歴に残ります(<a href="#audit">第 9 章</a>)。</p>
+      <div class="table-wrap"><table>
+        <tr><th>方法</th><th>使える条件</th><th>記録される担当者</th></tr>
+        <tr><td>Google でログイン(担当者用)</td><td><code>STAFF_EMAILS</code> に登録した職員のメールアドレス</td><td>Google アカウントの名前とメールアドレス(本人確認済み)</td></tr>
+        <tr><td>共通パスワード</td><td><code>ADMIN_PASSWORD</code> を設定している間</td><td>ログイン時に入力した担当者名(必須・自己申告)</td></tr>
+      </table></div>
+      <ul>
+        <li>ログイン状態はブラウザーのセッション(署名付き Cookie)で保持します。上部メニューに「学生課管理(担当者名)」と表示されます。</li>
+        <li>ログイン前に管理画面の URL を開くと、ログイン後にその画面へ戻ります(管理画面内の URL に限る)。</li>
+        <li>Google ログインに移行したら、<code>ADMIN_PASSWORD</code> を空にすると共通パスワードを無効にできます。</li>
+      </ul>
+      <div class="note danger"><strong>必ず変更すること</strong>未設定のときのパスワードは開発用の <code>admin</code> です。人に使ってもらう前に必ず設定してください。</div>
+
+      <h3>5-2 管理画面トップ</h3>
+      <ul>
+        <li><span class="b b-pending">審査待ち</span> <span class="b b-approved">公開中</span> <span class="b b-rejected">差し戻し</span> のタブと、それぞれの件数を表示します。</li>
+        <li>一覧の列: 開催日時、イベント名、主催、種別、申込数(このサイトで申込なら「申込数 / 定員」)、受付日、最終審査(担当者名と操作)。</li>
+        <li>並び順: 審査待ちは<strong>受付の古い順</strong>(先に来たものから処理)、公開中・差し戻しは開催日時の新しい順。</li>
+        <li>上部のボタン: 「操作履歴」「イベントのデータ分析」「📍 キャンパスマップのピン設定」「＋ イベントを登録」。</li>
+      </ul>
+
+      <h3>5-3 審査</h3>
+      <p>応募内容をすべて表示します。公開されない情報(受付番号、連絡先、応募者からの連絡事項)もここで確認できます。「応募者へのコメント」を書いて、次のいずれかを押します。</p>
+      <div class="table-wrap"><table>
+        <tr><th>ボタン</th><th>結果</th></tr>
+        <tr><td>承認して公開</td><td>一覧に公開されます</td></tr>
+        <tr><td>差し戻す</td><td>コメントの入力が必須。応募者は受付番号でコメントを確認します</td></tr>
+        <tr><td>審査待ちに戻す</td><td>公開を取り下げて審査待ちにします</td></tr>
+      </table></div>
+      <p>審査画面には「最終審査: 担当者名(操作、日時)」と、そのイベントの操作履歴が表示されます。承認・差し戻しの結果をメールで知らせる機能はありません。</p>
+
+      <h3>5-4 イベントの登録(紙掲示物の転載など)</h3>
+      <ul>
+        <li>学生課が直接登録したイベントは<strong>審査なしで即時公開</strong>され、種別は <span class="b b-office">学生課掲載</span> になります。</li>
+        <li>入力項目は応募フォームとほぼ同じです。連絡先メールは任意、同意チェックと連絡事項はなし、主催者の種別の初期値は「学生課・大学」。</li>
+        <li>紙のポスターは写真を撮ってアップロードすると、スマートフォンからも見られます。</li>
+      </ul>
+
+      <h3>5-5 イベントの編集・削除</h3>
+      <div class="grid-2">
+        <div class="panel"><h4>編集</h4><ul>
+          <li>すべての項目を変更できる(ステータスは変わらない)</li>
+          <li>新しいポスターをアップロードすると古い画像ファイルは削除</li>
+          <li>「現在のポスターを削除」で画像を外せる</li>
+        </ul></div>
+        <div class="panel"><h4>削除(確認あり・元に戻せない)</h4><ul>
+          <li>イベント本体</li>
+          <li>ポスター画像</li>
+          <li>参加申込、閲覧履歴、お気に入り</li>
+        </ul></div>
+      </div>
+
+      <h3>5-6 参加申込者の管理</h3>
+      <ul>
+        <li>審査画面に「参加申込者(○ 名 / 定員 ○ 名)」の一覧を表示します。列: No.、氏名、学籍番号、メールアドレス、申込日時。</li>
+        <li>「CSV ダウンロード」で一覧を保存できます。Excel で文字化けしないよう BOM 付き UTF-8 で出力します。</li>
+        <li>各行の「取消」で申込を取り消せます。空きが 1 つ増え、一覧の人数にも反映されます。</li>
+      </ul>
+    </section>
+
+    <!-- 06 -->
+    <section class="chapter" id="map">
+      <h2><span class="num">06</span>開催場所と地図</h2>
+
+      <h3>6-1 開催場所の入力候補</h3>
+      <p>応募・登録フォームの「開催場所」に文字を入れると、0.3 秒ほど待ってから候補を表示します。矢印キーと Enter、またはクリックで選びます。</p>
+      <div class="grid-2">
+        <div class="panel"><h4>① 学内の建物(先頭)</h4><ul>
+          <li>入力した文字を名称に含む建物</li>
+          <li>全角・半角、括弧書き、空白の違いは無視</li>
+          <li>選んだあとに「6階 大講義室」などを書き足せる</li>
+        </ul></div>
+        <div class="panel"><h4>② 学外の場所(続けて)</h4><ul>
+          <li>2 文字以上入力したときだけ Photon で検索</li>
+          <li>日本国内のみ・最大 10 件、キャンパスに近い順</li>
+          <li>選ぶと緯度・経度も保存し、地図が正しい位置を指す</li>
+          <li>名称を別の文字列に書き換えると位置は破棄</li>
+        </ul></div>
+      </div>
+      <p>場所検索サービスが止まっていても、学内の建物の候補は表示されます。</p>
+      <h4>学内の建物(<code>places.py</code> の <code>CAMPUS_PLACES</code>、21 件)</h4>
+      <p>L1号館(一般教育棟)、L2号館、S号館(理学部校舎)、MB号館(海洋生命科学部校舎)、新M号館(医学部校舎)、A1号館・A2号館(医療衛生学部校舎)、N号館(看護学部校舎)、FR号館(未来工学部校舎)、V号館(獣医学部校舎)、臨床教育研究棟(IPE棟)、多目的研究棟C棟、北里大学中央図書館、IPE棟図書館、学生ホール、総合体育館、部室棟、第一総合グラウンド、薬用植物園、クレセント、北里大学病院</p>
+      <p>入力が建物名か別名(例「中央図書館」「IPE棟」「C棟」)で始まれば、その建物として扱います。「L1号館 6階 大講義室」は L1号館です。</p>
+
+      <h3>6-2 詳細ページの地図表示</h3>
+      <div class="table-wrap"><table>
+        <tr><th>開催場所</th><th>キャンパスマップ</th><th>Google マップ</th></tr>
+        <tr><td>学内の建物</td><td>イラストにピンと建物名</td><td>建物の位置(位置不明なら名称で検索)</td></tr>
+        <tr><td>学外(候補から選択)</td><td>なし</td><td>選んだ位置</td></tr>
+        <tr><td>学外(自由入力)</td><td>なし</td><td>入力した名称で検索した結果</td></tr>
+        <tr><td>オンライン</td><td colspan="2">地図を表示しない</td></tr>
+      </table></div>
+      <ul>
+        <li>「オンライン」「online」「Zoom」「Teams」「Webex」「YouTube」を含む場所はオンライン開催とみなします。</li>
+        <li>ピンが未設定の建物は、キャンパスマップを出さず Google マップだけを表示します。</li>
+        <li>「Google マップで開く(経路案内)」リンクから Google マップを開けます。</li>
+      </ul>
+
+      <h3>6-3 キャンパスマップのピン設定(学生課)</h3>
+      <ol class="steps">
+        <li><code>/admin/campus-map</code> を開き、左の一覧で建物を選びます。</li>
+        <li>イラスト上の位置をクリックし、「この位置で保存」を押します。</li>
+        <li>「初期位置に戻す」で、プログラムに書かれた初期位置に戻せます。</li>
+      </ol>
+      <ul>
+        <li>初期位置は緯度・経度からの概算です。</li>
+        <li>未設定の建物にピンを置くと、その位置から緯度・経度を逆算して Google マップにも使います。</li>
+        <li>設定したピン位置はデータベース(<code>campus_pins</code>)に保存されます。</li>
+      </ul>
+      <h4>修正をチームで共有する(<code>feature/map-fixes</code>)</h4>
+      <ul>
+        <li>「すべての建物名を表示する」に切り替えると、全部のピンに建物名が出て、ずれている建物を探しやすくなります。</li>
+        <li>画面で直した位置は<strong>そのパソコンのデータベースにだけ</strong>保存されます。画面の下に「修正したピン位置」の一覧(元の位置 → 新しい位置)が出ます。</li>
+        <li>チーム全員に反映するには、アプリを止めて <code>flask apply-pins</code> を実行します。修正値が <code>campus_events/places.py</code> に書き戻されるので、それをコミットします。</li>
+      </ul>
+      <div class="note warn"><strong>ピン未設定の建物(7 件)</strong>S号館、新M号館、FR号館、V号館、臨床教育研究棟(IPE棟)、多目的研究棟C棟、IPE棟図書館。ほかの建物の位置も含め、詳しい人の修正スクリーンショットを待って修正予定です。</div>
+    </section>
+
+    <!-- 07 -->
+    <section class="chapter" id="ds">
+      <h2><span class="num">07</span>おすすめ・お気に入り・データ分析</h2>
+
+      <h3>7-1 閲覧履歴の記録とブラウザーの識別</h3>
+      <h4>ブラウザーの識別</h4>
+      <ul>
+        <li>イベント詳細・おすすめ・お気に入りの画面を初めて開いたとき、またはお気に入りに保存したときに、ランダムな ID(48 桁)を発行し、署名付き Cookie <code>campus_events_visitor</code> に保存します(学生課としてログイン中に詳細ページを開いた場合は発行しない)。</li>
+        <li>Cookie は <strong>180 日間</strong>有効。JavaScript から読めない設定(HttpOnly)で、他サイトからの送信も制限(SameSite=Lax)。改ざんされた Cookie は無視します。</li>
+        <li>ログインしていない場合、ID は氏名・メールアドレス・学籍番号とは結び付けません。ブラウザーや端末が違えば別人として扱います。</li>
+        <li>ログイン中は、アカウントに紐付いた ID を使うので、どの端末でも同じ履歴・お気に入りになります(<a href="#login">第 8 章</a>)。</li>
+      </ul>
+      <h4>閲覧の記録</h4>
+      <ul>
+        <li>イベント詳細ページを開いたときに記録します。</li>
+        <li>同じブラウザーが同じイベントを<strong>同じ日に何度開いても 1 件</strong>。日が変われば別の記録です。</li>
+        <li>学生課としてログイン中の閲覧は記録しません。公開中のイベントだけ記録します。</li>
+        <li>保存期間は今日を含めて <strong>90 日</strong>。古い記録は詳細・おすすめ・分析の画面を開いたときに自動で削除されます。</li>
+      </ul>
+      <h4>学生自身による削除(おすすめ画面の「おすすめに使うデータと設定」)</h4>
+      <div class="table-wrap"><table>
+        <tr><th>ボタン</th><th>削除されるもの</th></tr>
+        <tr><td>閲覧履歴を削除</td><td>このブラウザーの閲覧履歴(お気に入りは残る)</td></tr>
+        <tr><td>履歴とお気に入りを削除</td><td>両方。ブラウザーの ID も新しくする</td></tr>
+      </table></div>
+      <p>Cookie を消しただけでは、サーバー上の記録はすぐには消えません(画面に注記あり)。</p>
+
+      <h3>7-2 お気に入り</h3>
+      <ul>
+        <li>詳細ページやおすすめ画面の「☆ お気に入りに保存」で保存、「★ お気に入りを解除」で解除します。</li>
+        <li><code>/favorites</code> に開催日の新しい順で表示します。保存済みのイベントは一覧のカードに <span class="b b-fav">★ お気に入り</span> が付きます。</li>
+        <li>公開中のイベントだけ保存できます。非公開になったイベントは一覧に出ません。</li>
+      </ul>
+
+      <h3>7-3 おすすめ(推薦)の計算方法</h3>
+      <div class="grid-2">
+        <div class="panel"><h4>おすすめに出す候補</h4><ul>
+          <li>公開中で、まだ始まっていないイベント</li>
+          <li>閲覧済み・お気に入り済み・申込済みのものは除く</li>
+          <li>「このサイトで申込」で満員のものは除く</li>
+        </ul></div>
+        <div class="panel"><h4>好みの推定に使う履歴</h4><ul>
+          <li>過去 90 日の閲覧</li>
+          <li>現在のお気に入り</li>
+          <li>ログイン中は、このサイトで申し込んだイベント</li>
+          <li>開催済みイベントの閲覧も好みの推定には使う</li>
+        </ul></div>
+      </div>
+      <h4>内容が近いものを探す手順</h4>
+      <ol class="steps">
+        <li>公開中の各イベントについて「イベント名(2 回)＋内容＋カテゴリ」の文章を作ります。名前を 2 回入れて、名前の一致を重視します。</li>
+        <li>全角・半角や大文字・小文字をそろえ、2〜4 文字ずつ区切った断片の出現を <strong>TF-IDF</strong> で数値の並び(ベクトル)にします。日本語でも単語分割が要りません。<br><small>TF-IDF: そのイベントによく出て、他のイベントにはあまり出ない言葉ほど重く扱う方法</small></li>
+        <li>このブラウザーの「好み」を、履歴のイベントのベクトルの重み付き合計で作ります。</li>
+        <li>好みと各候補の近さを<strong>コサイン類似度</strong>(0〜1、1 に近いほど似ている)で計算し、近い順に並べます。0 のものは出しません。</li>
+        <li>各候補に「おすすめの理由」と類似度を表示します。類似度は確率ではありません。</li>
+      </ol>
+      <div class="formula">好みの重み = 閲覧した日数(同じイベントは 3 日分まで)× 1 ＋ お気に入りなら 5 ＋ 申し込んでいれば 8(ログイン中のみ)</div>
+      <h4>履歴が無い・近いものが無いとき(人気順)</h4>
+      <div class="formula">人気度 = お気に入り数 × 5 ＋ 閲覧(ブラウザーごとに 3 日分まで)× 1 ＋ このサイトでの申込数</div>
+      <p>利用実績が全く無いイベントは開催日時の近い順です。理由欄に「履歴がないため」などの根拠を表示します。<strong>表示件数:</strong>トップページ 3 件、おすすめ画面 12 件まで。</p>
+
+      <h3>7-4 データ分析(学生課)</h3>
+      <h4>期間の指定</h4>
+      <ul>
+        <li>イベントの<strong>開催開始日</strong>で絞り込みます。初期値は「今日の 90 日前 〜 30 日後」。対象は公開中のイベントのみ。</li>
+        <li>その期間に開催されるイベントについて、申込・お気に入りは現在残っているすべて、閲覧は保存期間内のすべてを数えます(申込日・閲覧日では絞らない)。</li>
+      </ul>
+      <h4>表示する指標</h4>
+      <div class="table-wrap"><table>
+        <tr><th>指標</th><th>計算方法・注意</th></tr>
+        <tr><td>公開イベント数</td><td>うちサイト内受付の数も表示</td></tr>
+        <tr><td>サイト内申込の合計・平均</td><td>「このサイトで申込」のイベントだけで計算。外部・申込不要は人数が分からないため 0 件とは扱わず「対象なし／―」</td></tr>
+        <tr><td>定員充足率</td><td>申込の合計 ÷ 定員の合計 × 100(定員が分かるサイト内受付のみ。各イベントの率の単純平均ではない)</td></tr>
+        <tr><td>閲覧記録・閲覧したブラウザー数・お気に入り数</td><td>ブラウザー数は実際の人数ではない</td></tr>
+        <tr><td>カテゴリ別の傾向</td><td>申込件数／1 イベント平均を切り替え</td></tr>
+        <tr><td>開催曜日別の傾向</td><td>月曜〜日曜</td></tr>
+        <tr><td>サイト内申込の多いイベント</td><td>上位 10 件</td></tr>
+        <tr><td>イベント別の集計表</td><td>申込、定員、充足率、閲覧、お気に入り</td></tr>
+      </table></div>
+      <h4>出力</h4>
+      <ul>
+        <li>「CSV を保存」: イベント別の集計(BOM 付き UTF-8)。セルの先頭が <code>=</code> <code>+</code> <code>-</code> <code>@</code> の場合は先頭に <code>'</code> を付け、Excel で式として実行されないようにしています。</li>
+        <li><code>/admin/analytics.json</code>: 同じ内容の JSON。</li>
+        <li>どちらも個人情報(氏名・メールアドレス等)は含みません。</li>
+      </ul>
+    </section>
+
+    <!-- 08 -->
+    <section class="chapter" id="login">
+      <h2><span class="num">08</span>学生のログインとマイページ</h2>
+      <p>大学の Google アカウント(<code>@st.kitasato-u.ac.jp</code>)でログインできます。<strong>ログインは任意</strong>で、Google の設定(<code>GOOGLE_CLIENT_ID</code> ／ <code>GOOGLE_CLIENT_SECRET</code>)が無いときはログインボタン自体を表示しません。</p>
+
+      <h3>8-1 ログインの流れと確認内容</h3>
+      <ol class="steps">
+        <li>右上の「ログイン」→「Google でログイン」で Google の画面に移ります(大学のアカウントが選ばれやすいヒント付き)。</li>
+        <li>Google で認証すると、アプリに戻ってきます。アプリは Google から本人の情報(ID トークン)を直接受け取ります。</li>
+        <li>次をすべて確認し、1 つでも合わなければログインさせません。</li>
+        <li>アカウントを作成(2 回目以降は更新)し、ログイン状態にします。ログインは 30 日間保持されます。</li>
+      </ol>
+      <div class="table-wrap"><table>
+        <tr><th>確認すること</th><th>合わないときの表示</th></tr>
+        <tr><td>メールアドレスが <code>@st.kitasato-u.ac.jp</code> で終わる</td><td>大学のアカウントでログインしてください</td></tr>
+        <tr><td>大学の Google Workspace が管理するアカウント(個人の Google アカウントは不可)</td><td>同上</td></tr>
+        <tr><td>Google でメールアドレスが確認済み</td><td>メールアドレスが確認されていない Google アカウントです</td></tr>
+        <tr><td>発行元が Google、宛先がこのアプリ、有効期限内</td><td>発行元／宛先／有効期限が正しくありません</td></tr>
+        <tr><td>ログイン開始時に作った使い捨ての確認値(state・nonce)が一致</td><td>ログインの有効期限が切れました</td></tr>
+      </table></div>
+
+      <h3>8-2 ログインするとできること</h3>
+      <div class="table-wrap"><table>
+        <tr><th>機能</th><th>内容</th></tr>
+        <tr><td>端末をまたいだ記録</td><td>お気に入り・閲覧履歴・参加申込をアカウント単位で保存。スマホとパソコンで同じものが見られる</td></tr>
+        <tr><td>ログイン前の記録の引き継ぎ</td><td>ログイン前にそのブラウザーで保存したお気に入り・閲覧履歴を、アカウントに移す</td></tr>
+        <tr><td>参加申込の自動入力</td><td>アカウントのメールアドレスで申し込む(他人のアドレスでは申し込めない)。氏名も自動で入る</td></tr>
+        <tr><td>過去の申込の紐付け</td><td>ログイン前に同じメールアドレスで申し込んだ分も、マイページに表示する</td></tr>
+        <tr><td>応募フォームの自動入力</td><td>連絡先メールにアカウントのアドレスが入る</td></tr>
+        <tr><td>おすすめへの反映</td><td>申し込んだイベントを重み 8 で好みの推定に使う(<a href="#ds">第 7 章</a>)</td></tr>
+      </table></div>
+
+      <h3>8-3 マイページ(<code>/mypage</code>)</h3>
+      <div class="grid-2">
+        <div class="panel"><h4>参加申込</h4><ul>
+          <li>開催日時、イベント、場所、申込日時の一覧</li>
+          <li>開始前なら「取り消す」で自分で取消できる</li>
+          <li>開始後は「終了」と表示(取消は主催者へ連絡)</li>
+        </ul></div>
+        <div class="panel"><h4>応募したイベント</h4><ul>
+          <li>ログイン中に応募したイベントのステータスと受付番号</li>
+          <li>学生課からのコメント</li>
+          <li>公開中なら公開ページへのリンク</li>
+        </ul></div>
+      </div>
+
+      <h3>8-4 ログアウトと共有端末</h3>
+      <ul>
+        <li>ログアウトすると、そのブラウザーの記録用 ID を新しく作り直します。次に同じ端末を使う人に、前の人の履歴やお気に入りは見えません。</li>
+        <li>ログアウトせずにセッションが切れた端末で別の人がログインしても、前の人の履歴は新しいアカウントに引き継ぎません。</li>
+      </ul>
+
+      <h3>8-5 開発用ログイン</h3>
+      <p>Google の設定なしで画面を確認するために、<code>ALLOW_DEV_LOGIN=1</code> のときだけ「開発用ログイン」が使えます。<code>@st.kitasato-u.ac.jp</code> のメールアドレスを入力するだけでログインできます。</p>
+      <div class="note danger"><strong>本人確認をしません</strong>人に公開するときは必ず無効にしてください(初期状態は無効)。</div>
+
+      <h3>8-6 Google 側の準備(無料)</h3>
+      <ol class="steps">
+        <li>Google Cloud Console でプロジェクトを作り、「OAuth 同意画面」を設定する(大学内だけで使うならユーザーの種類は「内部」)。</li>
+        <li>「OAuth クライアント ID」(ウェブ アプリケーション)を作成し、リダイレクト URI に <code>http://127.0.0.1:5000/login/google/callback</code>(公開するならその URL のもの)を登録する。</li>
+        <li>発行された値を <code>GOOGLE_CLIENT_ID</code> と <code>GOOGLE_CLIENT_SECRET</code> に設定して起動する。</li>
+      </ol>
+      <div class="note warn"><strong>確認が必要</strong>大学の Google 管理者が外部アプリでのログインを制限している場合は、情報システムの担当部署への確認が必要です。本物の Google でのログインは、まだ試していません。</div>
+    </section>
+
+    <!-- 09 -->
+    <section class="chapter" id="audit">
+      <h2><span class="num">09</span>学生課の担当者と操作履歴</h2>
+      <p>学生課の担当者が行った操作を「誰が・いつ・何を」の形で記録します。記録は<strong>学生課の画面だけ</strong>で見られ、学生向けの画面・API(審査状況ページなど)には一切出しません。</p>
+
+      <h3>9-1 記録する操作</h3>
+      <div class="table-wrap"><table>
+        <tr><th>操作</th><th>「内容」欄に残るもの</th></tr>
+        <tr><td>ログイン</td><td>ログイン方法(Google ／ 共通パスワード(自己申告))</td></tr>
+        <tr><td>承認して公開 ／ 差し戻し ／ 審査待ちに戻す</td><td>応募者へのコメント</td></tr>
+        <tr><td>イベントを登録</td><td>—</td></tr>
+        <tr><td>イベントを編集</td><td>変更した項目(例「変更: 定員、場所」)</td></tr>
+        <tr><td>イベントを削除</td><td>— (削除後もイベント名は履歴に残る)</td></tr>
+        <tr><td>参加申込を取消</td><td>申込者の氏名</td></tr>
+        <tr><td>ピン位置を設定 ／ 初期化</td><td>建物名</td></tr>
+      </table></div>
+
+      <h3>9-2 見られる場所</h3>
+      <div class="table-wrap"><table>
+        <tr><th>画面</th><th>表示</th></tr>
+        <tr><td>管理画面トップ</td><td>各イベントの「最終審査」列(担当者名と操作)</td></tr>
+        <tr><td>審査画面</td><td>「最終審査: 担当者名(操作、日時)」と、そのイベントの操作履歴</td></tr>
+        <tr><td>操作履歴(<code>/admin/audit</code>)</td><td>全操作の一覧(新しい順に 300 件)。削除したイベントは「(削除済み)」と表示</td></tr>
+      </table></div>
+      <ul>
+        <li>共通パスワードでログインした担当者には <span class="b b-pending">自己申告</span> の印が付きます(入力された名前で、本人確認はしていない)。</li>
+        <li>Google でログインした担当者は、名前と本人確認済みのメールアドレスが記録されます。</li>
+      </ul>
+    </section>
+
+    <!-- 10 -->
+    <section class="chapter" id="inputs">
+      <h2><span class="num">10</span>入力項目と入力チェック</h2>
+      <h3>イベント(応募・登録・編集)</h3>
+      <div class="table-wrap"><table>
+        <tr><th>項目</th><th>必須</th><th>制限・ルール</th></tr>
+        <tr><td>イベント名</td><td>必須</td><td>100 文字以内</td></tr>
+        <tr><td>カテゴリ</td><td>必須</td><td>講演会・セミナー ／ 学術・研究 ／ 就職・キャリア ／ 部活動・サークル ／ 学園祭・学内行事 ／ ボランティア・地域 ／ 健康・医療 ／ 国際交流 ／ その他</td></tr>
+        <tr><td>イベント内容</td><td>必須</td><td>4000 文字以内</td></tr>
+        <tr><td>開始日時</td><td>必須</td><td>日付と時刻</td></tr>
+        <tr><td>終了日時</td><td>任意</td><td>開始日時より後</td></tr>
+        <tr><td>開催場所</td><td>必須</td><td>100 文字以内(第 6 章の候補から選択可)</td></tr>
+        <tr><td>参加方法</td><td>必須</td><td>申込不要(当日参加自由)／ このサイトで参加申込を受け付ける ／ 外部フォーム・窓口などで申込を受け付ける</td></tr>
+        <tr><td>定員</td><td>任意</td><td>1〜100000 の整数。空欄なら制限なし</td></tr>
+        <tr><td>申込方法・申込先</td><td>外部のとき必須</td><td>500 文字以内</td></tr>
+        <tr><td>主催者・団体名</td><td>必須</td><td>100 文字以内</td></tr>
+        <tr><td>主催者の種別</td><td>必須</td><td>学生課・大学 ／ 学部・学科 ／ 部活動・サークル ／ 学生個人・有志 ／ 学外団体</td></tr>
+        <tr><td>連絡先メール</td><td>応募は必須<br>登録は任意</td><td>200 文字以内、@ を含み空白なし。詳細ページに公開</td></tr>
+        <tr><td>ポスター画像</td><td>任意</td><td>PNG ／ JPEG ／ GIF ／ WebP、5MB まで</td></tr>
+        <tr><td>学生課への連絡事項</td><td>任意(応募のみ)</td><td>1000 文字以内、公開しない</td></tr>
+        <tr><td>同意</td><td>必須(応募のみ)</td><td>—</td></tr>
+      </table></div>
+      <p>エラーがあるときは、誤りをまとめて表示し、入力内容は残します。5MB を超えるファイルは「ファイルサイズが大きすぎます」と表示します。</p>
+      <h3>参加申込</h3>
+      <p>氏名(必須・50 文字以内)、メールアドレス(必須・200 文字以内・@ を含む)、学籍番号(任意・20 文字以内)</p>
+      <h3>審査</h3>
+      <p>差し戻しのときはコメントが必須です。</p>
+    </section>
+
+    <!-- 09 -->
+    <section class="chapter" id="db">
+      <h2><span class="num">11</span>データベース</h2>
+      <p>データ: <code>instance/campus_events.sqlite</code>　ポスター画像: <code>instance/uploads/</code>　日時は「2026-10-20T17:00」のような文字列(日本時間)で保存します。</p>
+      <div class="table-wrap"><table>
+        <tr><th>テーブル</th><th>内容</th><th>主な項目・ルール</th></tr>
+        <tr><td><code>events</code></td><td>イベント・応募</td><td>title, description, category, start_at, end_at, location, location_lat/lng(学外で候補から選んだ位置), organizer_name/type, contact_email, capacity, registration_mode(none/site/external), registration_info, note_to_office(非公開), poster_filename, source(office/student), status(pending/approved/rejected), review_comment, receipt_code(重複なし), created_at, updated_at</td></tr>
+        <tr><td><code>registrations</code></td><td>このサイトでの参加申込</td><td>event_id, name, email, student_number, created_at。同じイベント×同じメールは 1 件まで。イベント削除で一緒に削除</td></tr>
+        <tr><td><code>campus_pins</code></td><td>ピン位置の修正</td><td>name(建物名), x, y(イラスト 1470×830 上の位置)</td></tr>
+        <tr><td><code>event_views</code></td><td>閲覧履歴</td><td>visitor_id, event_id, view_date, first/last_viewed_at。ブラウザー×イベント×日で 1 件。90 日で削除</td></tr>
+        <tr><td><code>event_favorites</code></td><td>お気に入り</td><td>visitor_id, event_id, created_at。ブラウザー×イベントで 1 件</td></tr>
+        <tr><td><code>users</code></td><td>ログインした学生</td><td>email(重複なし), name, google_sub(Google のアカウント ID), visitor_id(閲覧・お気に入り用の ID), created_at, last_login_at</td></tr>
+        <tr><td><code>audit_logs</code></td><td>学生課の操作履歴</td><td>created_at, actor_name, actor_email, auth_method(google/password), action, event_id(削除後は空), event_title, detail</td></tr>
+      </table></div>
+      <p>このほか、<code>registrations.user_id</code>(ログイン中の申込のアカウント)と <code>events.submitted_by_user_id</code>(ログイン中に応募したアカウント)を追加しています。</p>
+      <h3>自動移行</h3>
+      <ul>
+        <li>アプリを起動するたびに構成を確認し、足りない列・テーブルを追加します。<strong>登録済みのデータは消しません。</strong></li>
+        <li>データベースが無ければ新しく作ります。</li>
+        <li>古い版の「事前申込が必要」チェックは「外部で申込」として引き継ぎます。</li>
+        <li><code>flask migrate-db</code> で手動でも実行できます。</li>
+      </ul>
+    </section>
+
+    <!-- 10 -->
+    <section class="chapter" id="status">
+      <h2><span class="num">12</span>イベントの状態</h2>
+      <div class="mermaid-box">
+<pre class="mermaid">
+stateDiagram-v2
+  direction LR
+  [*] --> 審査待ち: 学生・団体が応募
+  [*] --> 公開中: 学生課が登録
+  審査待ち --> 公開中: 承認して公開
+  審査待ち --> 差し戻し: 差し戻す(コメント必須)
+  公開中 --> 審査待ち: 審査待ちに戻す
+  公開中 --> 差し戻し: 差し戻す
+  差し戻し --> 公開中: 承認して公開
+  差し戻し --> 審査待ち: 審査待ちに戻す
+</pre>
+      </div>
+      <ul>
+        <li><span class="b b-approved">公開中</span> のイベントだけが、一覧・詳細・申込・おすすめ・分析の対象です。</li>
+        <li>差し戻し後に応募者が修正する機能はなく、新しく応募し直します。</li>
+        <li>どの状態からでも学生課は編集・削除できます。</li>
+      </ul>
+    </section>
+
+    <!-- 11 -->
+    <section class="chapter" id="security">
+      <h2><span class="num">13</span>セキュリティと個人情報</h2>
+      <div class="grid-2">
+        <div class="panel"><h4>不正な送信・入力の防止</h4><ul>
+          <li>すべてのフォームに確認用の値(CSRF トークン)を付け、合わない送信は拒否</li>
+          <li>入力値を命令文に直接埋め込まない書き方(SQL インジェクション対策)</li>
+          <li>画面に出す値は自動でエスケープ(スクリプト埋め込み対策)</li>
+        </ul></div>
+        <div class="panel"><h4>ログインとアップロード</h4><ul>
+          <li>パスワードは処理時間から推測されにくい方法で比較</li>
+          <li>ログイン後の移動先はサイト内(学生課は管理画面内)に限定</li>
+          <li>Google ログインは ID トークンの発行元・宛先・期限・nonce・ドメインを検証</li>
+          <li>画像は png / jpg / jpeg / gif / webp のみ、5MB まで</li>
+          <li>保存時はランダムなファイル名に変更</li>
+        </ul></div>
+      </div>
+      <h3>個人情報の公開範囲</h3>
+      <div class="table-wrap"><table>
+        <tr><th>情報</th><th>見られる人</th></tr>
+        <tr><td>参加申込者の氏名・メール・学籍番号</td><td>学生課のみ(審査画面・CSV)</td></tr>
+        <tr><td>応募者の連絡事項</td><td>学生課のみ</td></tr>
+        <tr><td>受付番号</td><td>応募者本人と学生課</td></tr>
+        <tr><td>主催者の連絡先メール</td><td>詳細ページで公開(問い合わせ先として)</td></tr>
+        <tr><td>閲覧履歴・お気に入り</td><td>ログインしていなければ個人と結び付けない。ログイン中はアカウントに紐付くが、学生課の分析では件数としてのみ表示</td></tr>
+        <tr><td>ログインした学生のメールアドレス・名前</td><td>本人(マイページ)。参加申込をした場合は学生課も申込者一覧で見られる</td></tr>
+        <tr><td>審査した担当者の名前</td><td>学生課のみ(操作履歴)</td></tr>
+      </table></div>
+      <ul>
+        <li>データ分析の画面・CSV・JSON には個人情報を含めません。</li>
+        <li>トップ・詳細・おすすめ・お気に入り・データ分析は閲覧者ごとに内容が変わるため、キャッシュさせない設定です。</li>
+      </ul>
+      <h3>外部サービスに送られる情報</h3>
+      <div class="table-wrap"><table>
+        <tr><th>サービス</th><th>送られる情報</th></tr>
+        <tr><td>Google マップ</td><td>開催場所の名称または緯度・経度(詳細ページを開いた人のブラウザーから)</td></tr>
+        <tr><td>Photon</td><td>開催場所の入力欄に入れた文字(サーバーから)</td></tr>
+        <tr><td>Google(ログイン)</td><td>ログインの要求(サーバーとブラウザーから)。パスワードはアプリに送られない</td></tr>
+      </table></div>
+    </section>
+
+    <!-- 12 -->
+    <section class="chapter" id="config">
+      <h2><span class="num">14</span>設定とコマンド</h2>
+      <h3>環境変数</h3>
+      <div class="table-wrap"><table>
+        <tr><th>名前</th><th>初期値</th><th>内容</th></tr>
+        <tr><td><code>ADMIN_PASSWORD</code></td><td><code>admin</code></td><td>学生課のパスワード。<strong>必ず変更</strong></td></tr>
+        <tr><td><code>SECRET_KEY</code></td><td><code>dev-secret-change-me</code></td><td>Cookie の署名用。<strong>必ず変更</strong></td></tr>
+        <tr><td><code>PLACE_SEARCH_URL</code></td><td><code>https://photon.komoot.io/api/</code></td><td>学外の場所検索。空にすると学内の建物だけを候補に出す</td></tr>
+        <tr><td><code>GOOGLE_CLIENT_ID</code> ／ <code>GOOGLE_CLIENT_SECRET</code></td><td>空</td><td>Google ログイン用。両方を設定するとログインボタンが出る</td></tr>
+        <tr><td><code>GOOGLE_REDIRECT_URI</code></td><td>空(自動)</td><td>Google からの戻り先を直接指定(トンネル経由などで必要な場合)</td></tr>
+        <tr><td><code>ALLOWED_EMAIL_DOMAIN</code></td><td><code>st.kitasato-u.ac.jp</code></td><td>学生がログインできるメールアドレスのドメイン</td></tr>
+        <tr><td><code>STAFF_EMAILS</code></td><td>空</td><td>学生課として Google ログインできる職員のメールアドレス(カンマ区切り)</td></tr>
+        <tr><td><code>ALLOW_DEV_LOGIN</code></td><td>無効</td><td><code>1</code> で開発用ログインを有効にする(公開時は必ず無効)</td></tr>
+      </table></div>
+      <h3>プログラム内の設定値(<code>campus_events/__init__.py</code>)</h3>
+      <div class="table-wrap"><table>
+        <tr><th>名前</th><th class="num-col">値</th><th>内容</th></tr>
+        <tr><td><code>MAX_CONTENT_LENGTH</code></td><td class="num-col">5MB</td><td>アップロードの上限</td></tr>
+        <tr><td><code>DS_HISTORY_DAYS</code></td><td class="num-col">90</td><td>閲覧履歴の保存日数</td></tr>
+        <tr><td><code>DS_COOKIE_MAX_AGE</code></td><td class="num-col">180 日</td><td>ブラウザー識別 Cookie の有効期間</td></tr>
+        <tr><td><code>DS_VIEW_WEIGHT</code></td><td class="num-col">1.0</td><td>おすすめでの閲覧の重み</td></tr>
+        <tr><td><code>DS_VIEW_CAP</code></td><td class="num-col">3</td><td>同じイベントの閲覧を数える最大日数</td></tr>
+        <tr><td><code>DS_FAVORITE_WEIGHT</code></td><td class="num-col">5.0</td><td>おすすめでのお気に入りの重み</td></tr>
+        <tr><td><code>DS_REGISTRATION_WEIGHT</code></td><td class="num-col">8.0</td><td>おすすめでの申込の重み(ログイン中)</td></tr>
+        <tr><td><code>PERMANENT_SESSION_LIFETIME</code></td><td class="num-col">30 日</td><td>ログイン状態の保持期間</td></tr>
+      </table></div>
+      <h3>コマンド(先に <code>export FLASK_APP=campus_events</code>)</h3>
+      <div class="table-wrap"><table>
+        <tr><th>コマンド</th><th>内容</th></tr>
+        <tr><td><code>flask run</code></td><td>アプリを起動(http://127.0.0.1:5000)</td></tr>
+        <tr><td><code>flask run --host 0.0.0.0</code></td><td>同じ Wi-Fi の他の端末からも開けるように起動</td></tr>
+        <tr><td><code>flask init-db</code></td><td>データベースを作り直す(<strong>全データ削除</strong>)</td></tr>
+        <tr><td><code>flask seed-db</code></td><td>サンプルイベント 6 件を追加(【サンプル】付き)</td></tr>
+        <tr><td><code>flask seed-ds-demo</code></td><td>おすすめ・分析確認用の架空データ 9 件を追加(【DSデモ】付き、二重追加なし)</td></tr>
+        <tr><td><code>flask migrate-db</code></td><td>データを残して構成を最新にする</td></tr>
+        <tr><td><code>flask purge-view-history</code></td><td>保存期間を過ぎた閲覧履歴を削除</td></tr>
+        <tr><td><code>flask apply-pins</code></td><td>画面で修正したピン位置を <code>places.py</code> に書き戻す(アプリを止めてから実行)</td></tr>
+        <tr><td><code>python -m pytest</code></td><td>自動テストを実行</td></tr>
+      </table></div>
+      <h3>初回セットアップ(Mac)</h3>
+<pre class="cmd">python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+export FLASK_APP=campus_events
+flask init-db
+flask seed-db
+flask run</pre>
+    </section>
+
+    <!-- 13 -->
+    <section class="chapter" id="files">
+      <h2><span class="num">15</span>ファイル構成</h2>
+      <div class="table-wrap"><table>
+        <tr><th>ファイル</th><th>役割</th></tr>
+        <tr><td><code>README.md</code></td><td>概要とセットアップ</td></tr>
+        <tr><td><code>requirements.txt</code> ／ <code>requirements-ds.txt</code></td><td>必要なライブラリ(Flask・pytest ／ scikit-learn・NumPy・SciPy)</td></tr>
+        <tr><td><code>campus_events/__init__.py</code></td><td>アプリの生成、設定、CSRF 対策、日時の表示形式</td></tr>
+        <tr><td><code>public.py</code></td><td>学生向け画面・API</td></tr>
+        <tr><td><code>admin.py</code></td><td>学生課向け画面(審査、登録、申込者、ピン設定、分析)</td></tr>
+        <tr><td><code>events.py</code></td><td>定数、入力チェック、イベント・申込のデータ操作、.ics 生成</td></tr>
+        <tr><td><code>places.py</code></td><td>学内の建物、場所検索、地図表示用の情報</td></tr>
+        <tr><td><code>behavior.py</code></td><td>閲覧履歴・お気に入りの記録、ブラウザーの識別</td></tr>
+        <tr><td><code>recommendations.py</code></td><td>おすすめの計算</td></tr>
+        <tr><td><code>analytics.py</code></td><td>データ分析の集計、CSV の安全化</td></tr>
+        <tr><td><code>data_science.py</code></td><td>おすすめ・お気に入り画面</td></tr>
+        <tr><td><code>accounts.py</code></td><td>学生・学生課の Google ログイン、マイページ</td></tr>
+        <tr><td><code>audit.py</code></td><td>学生課の操作履歴</td></tr>
+        <tr><td><code>db.py</code></td><td>データベース接続、初期化、自動移行</td></tr>
+        <tr><td><code>schema.sql</code> ／ <code>schema_ds.sql</code></td><td>テーブル定義(イベント・申込・ピン ／ 閲覧履歴・お気に入り)</td></tr>
+        <tr><td><code>seed.py</code> ／ <code>seed_ds.py</code></td><td>サンプルデータ ／ デモデータ</td></tr>
+        <tr><td><code>templates/</code></td><td>画面の HTML(<code>admin/</code> は学生課用、<code>ds/</code> はおすすめ・分析用、<code>accounts/</code> はログイン・マイページ)</td></tr>
+        <tr><td><code>static/style.css</code></td><td>画面のデザイン</td></tr>
+        <tr><td><code>static/app.js</code></td><td>申込人数の自動更新、参加方法の切替、場所の候補、ピン設定</td></tr>
+        <tr><td><code>static/campus_map.webp</code></td><td>キャンパスマップのイラスト</td></tr>
+        <tr><td><code>static/ds/</code></td><td>おすすめ・分析画面のデザインとグラフ</td></tr>
+        <tr><td><code>tests/</code></td><td>自動テスト</td></tr>
+        <tr><td><code>instance/</code></td><td>データベースとポスター画像(Git では管理しない)</td></tr>
+      </table></div>
+    </section>
+
+    <!-- 14 -->
+    <section class="chapter" id="branches">
+      <h2><span class="num">16</span>ブランチ構成(2026-10-21 時点)</h2>
+      <div class="branch">
+        <div>main <small>基本機能(第 4・5・10〜13 章)。既定のブランチ</small></div>
+        <div class="lv1">hackathon_GoogleMap <small>＋地図機能(第 6 章、fu25107 さん)</small></div>
+        <div class="lv2">feature/recommendations-analytics <small>＋おすすめ・お気に入り・データ分析(第 7 章)</small></div>
+        <div class="lv2" style="margin-left:60px">feature/google-login <small>＋学生のログイン・マイページ(第 8 章)、学生課の操作履歴(第 9 章)</small></div>
+        <div class="lv2" style="margin-left:80px">feature/map-fixes <small>＋ピン位置の共有(<code>apply-pins</code>)。ピン位置の修正もここで行う</small></div>
+        <div>claude/funny-pascal-791jvg <small>Claude の作業用(main ＋ この説明書)</small></div>
+      </div>
+      <div class="note"><strong>main への取り込み</strong>下のブランチは上のブランチをすべて含むので、<code>feature/map-fixes</code> を main に取り込めば全機能が入ります(地図のコミットは fu25107 さんの作として残る)。</div>
+    </section>
+
+    <!-- 15 -->
+    <section class="chapter" id="tests">
+      <h2><span class="num">17</span>テスト</h2>
+      <p><code>python -m pytest</code> で 110 件(<strong>109 件成功、1 件スキップ</strong>)。</p>
+      <div class="table-wrap"><table>
+        <tr><th>ファイル</th><th class="num-col">件数</th><th>内容</th></tr>
+        <tr><td><code>test_app.py</code></td><td class="num-col">27</td><td>応募〜承認、差し戻し、入力チェック、CSRF、画像の拒否、ログイン、期間絞り込み、.ics、削除、参加申込と定員、重複申込、DB 自動移行、地図、場所検索</td></tr>
+        <tr><td><code>test_integration.py</code></td><td class="num-col">26</td><td>画面への組み込み、閲覧・お気に入り、DB 互換</td></tr>
+        <tr><td><code>test_recommendations.py</code></td><td class="num-col">11</td><td>おすすめの計算</td></tr>
+        <tr><td><code>test_analytics.py</code></td><td class="num-col">9</td><td>データ分析の集計</td></tr>
+        <tr><td><code>test_accounts.py</code></td><td class="num-col">25</td><td>学生ログイン(不正なアカウントの拒否 8 通りを含む)、端末をまたいだ記録、共有端末、マイページ、申込の取消、おすすめへの反映</td></tr>
+        <tr><td><code>test_staff.py</code></td><td class="num-col">8</td><td>担当者名の必須化、操作の記録、学生に担当者名が見えないこと、職員の Google ログイン</td></tr>
+        <tr><td><code>test_map_pins.py</code></td><td class="num-col">4</td><td>修正したピンの一覧、<code>apply-pins</code> の書き戻し</td></tr>
+      </table></div>
+      <p>スキップの 1 件は、特定のデータベースファイルを環境変数 <code>CAMPUS_EVENTS_REFERENCE_DB</code> で指定したときだけ動くテストです。</p>
+    </section>
+
+    <!-- 16 -->
+    <section class="chapter" id="limits">
+      <h2><span class="num">18</span>制約と今後の課題</h2>
+      <div class="note danger">
+        <strong>運用前に必ず行うこと</strong>
+        <ul>
+          <li><code>ADMIN_PASSWORD</code> と <code>SECRET_KEY</code> を設定する。</li>
+          <li><code>flask run</code> は開発用のサーバー。常時公開するなら本番用の仕組み(Gunicorn など)とサーバーへの配置が必要。</li>
+        </ul>
+      </div>
+      <h3>機能上の制約</h3>
+      <ul>
+        <li>ログインしていない応募者は、受付番号を紛失すると審査状況を確認できない。</li>
+        <li>差し戻された応募を修正・再申請する機能が無い(新しく応募し直す)。</li>
+        <li>ログインしていない参加申込者は自分で取り消せない(学生課が取り消す)。</li>
+        <li>メール通知(応募受付、審査結果、申込完了)が無い。</li>
+        <li>共通パスワードでログインした学生課の担当者名は自己申告。確実に記録するには Google ログインに移行する。</li>
+        <li>審査待ちのイベントのポスター画像も、URL を知っていれば開ける(URL はランダムで推測はできない)。</li>
+        <li>ログインしていない場合、おすすめ・お気に入りはブラウザー単位(端末を変えると引き継がれない)。</li>
+        <li>データ分析の閲覧数・ブラウザー数は実際の人数ではない。</li>
+        <li>SQLite は 1 ファイルのデータベース。大人数の同時利用には向かない。</li>
+      </ul>
+      <h3>確認が必要な事項</h3>
+      <ul>
+        <li>キャンパスマップのイラスト(<code>campus_map.webp</code>)は大学公式の地図と思われる。リポジトリが公開(Public)なので掲載してよいか確認する。</li>
+        <li>建物名のうち、V号館の所在、「クレセント」の正式名称、「学生課」という部署名を実物で確認する。</li>
+        <li>ピンの位置を、詳しい人の修正スクリーンショットをもとに直す(未設定の 7 件を含む)。</li>
+        <li>Google Cloud でのログイン設定と、大学の Google 管理者による外部アプリの許可を確認する。</li>
+        <li>Photon の公開サーバーは試用向け。本番では自前のサーバーや Google Places API などへの切り替えを検討する。</li>
+        <li>閲覧履歴を Cookie で 90 日記録すること(個人は特定しない)を、発表や利用案内で説明しておく。</li>
+      </ul>
+      <h3>検討中(未実装)の機能</h3>
+      <div class="grid-2">
+        <div class="panel"><h4>ポスターの読み取りと自動入力</h4><ul>
+          <li>学生課のみが使う</li>
+          <li>ポスターに無い項目は空欄のまま</li>
+          <li>ChatGPT Edu のクレジットが API に使えるか主催者に確認中</li>
+        </ul></div>
+      </div>
+      <p>企画相談チャットボットは、今回は作らないことにしました。そのほかの候補: 審査結果のメール通知、差し戻された応募の修正・再申請、カレンダー表示、リマインダー、施設使用申請との連携。</p>
+    </section>
+
+    <footer class="doc-foot">
+      同じ内容をリポジトリの <code>docs/機能説明書.html</code> にも置いています(ブラウザーで開けます)。
+    </footer>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>if (window.mermaid) mermaid.initialize({ startOnLoad: true, theme: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default" });</script>
+</body>
+</html>
