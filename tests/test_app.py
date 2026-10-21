@@ -60,7 +60,7 @@ def event_form(**overrides):
 
 def login(client):
     token = csrf(client, "/admin/login")
-    return client.post("/admin/login", data={"password": "secret", "_csrf_token": token})
+    return client.post("/admin/login", data={"password": "secret", "staff_name": "テスト担当", "_csrf_token": token})
 
 
 def submit(client, **overrides):
@@ -129,7 +129,7 @@ def test_poster_upload_rejects_non_images(client):
 def test_admin_pages_require_login(client):
     assert client.get("/admin/").status_code == 302
     token = csrf(client, "/admin/login")
-    res = client.post("/admin/login", data={"password": "wrong", "_csrf_token": token})
+    res = client.post("/admin/login", data={"password": "wrong", "staff_name": "テスト担当", "_csrf_token": token})
     assert "パスワードが違います" in res.get_data(as_text=True)
 
 
@@ -193,7 +193,7 @@ def test_delete_event(client):
 def test_login_next_does_not_redirect_offsite(client):
     token = csrf(client, "/admin/login")
     res = client.post("/admin/login?next=https://evil.example",
-                      data={"password": "secret", "_csrf_token": token})
+                      data={"password": "secret", "staff_name": "テスト担当", "_csrf_token": token})
     assert res.headers["Location"] == "/admin/"
 
 

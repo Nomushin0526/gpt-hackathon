@@ -4,6 +4,7 @@
 <div class="admin-header">
   <h1>学生課 管理画面</h1>
   <div class="actions">
+    <a class="button button-secondary" href="{{ url_for('admin.audit_log') }}">操作履歴</a>
     <a class="button button-secondary ds-admin-analytics" href="{{ url_for('admin.analytics_dashboard') }}">イベントのデータ分析</a>
     <a class="button button-secondary" href="{{ url_for('admin.campus_map') }}">📍 キャンパスマップのピン設定</a>
     <a class="button" href="{{ url_for('admin.new_event') }}">＋ イベントを登録(紙掲示物の転載など)</a>
@@ -21,7 +22,7 @@
 {% if events %}
   <table class="table">
     <thead>
-      <tr><th>開催日時</th><th>イベント名</th><th>主催</th><th>種別</th><th>申込数</th><th>受付日</th></tr>
+      <tr><th>開催日時</th><th>イベント名</th><th>主催</th><th>種別</th><th>申込数</th><th>受付日</th><th>最終審査</th></tr>
     </thead>
     <tbody>
       {% for e in events %}
@@ -32,6 +33,7 @@
           <td><span class="badge badge-{{ e.source }}">{{ SOURCE_LABELS[e.source] }}</span></td>
           <td>{% if e.registration_mode == "site" %}{{ e.registered }}{% if e.capacity %} / {{ e.capacity }}{% endif %}{% else %}—{% endif %}</td>
           <td>{{ e.created_at|dt(False) }}</td>
+          <td>{% set r = reviewers.get(e.id) %}{% if r %}{{ r.actor_name }}<br><span class="small">{{ AUDIT_ACTIONS[r.action] }}</span>{% else %}—{% endif %}</td>
         </tr>
       {% endfor %}
     </tbody>

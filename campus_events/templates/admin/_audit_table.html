@@ -1,0 +1,27 @@
+{# 操作履歴の表。logs: audit_logs の行、show_event: イベント名の列を出すか #}
+<div class="table-scroll">
+<table class="table audit-table">
+  <thead><tr><th>日時</th><th>担当者</th><th>操作</th>{% if show_event %}<th>イベント</th>{% endif %}<th>内容</th></tr></thead>
+  <tbody>
+    {% for log in logs %}
+      <tr>
+        <td>{{ log.created_at[:16]|dt }}</td>
+        <td>
+          {{ log.actor_name }}
+          {% if log.actor_email %}<br><span class="small">{{ log.actor_email }}</span>{% endif %}
+          {% if log.auth_method == "password" %}<br><span class="badge badge-warn-soft" title="共通パスワードでのログイン時に入力された名前です">自己申告</span>{% endif %}
+        </td>
+        <td><span class="audit-action audit-{{ log.action }}">{{ AUDIT_ACTIONS.get(log.action, log.action) }}</span></td>
+        {% if show_event %}
+          <td>
+            {% if log.event_id %}<a href="{{ url_for('admin.review', event_id=log.event_id) }}">{{ log.event_title }}</a>
+            {% elif log.event_title %}{{ log.event_title }} <span class="small">(削除済み)</span>
+            {% else %}—{% endif %}
+          </td>
+        {% endif %}
+        <td class="pre audit-detail">{{ log.detail or '' }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>

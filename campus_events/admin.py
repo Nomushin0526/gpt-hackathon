@@ -12,7 +12,8 @@ from flask import (
     request, session, url_for, jsonify,
 )
 
-from . import analytics, behavior, events, places
+from . import accounts, analytics, audit, behavior, events, places
+from .db import get_db
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -27,26 +28,61 @@ def login_required(view):
     return wrapped
 
 
+def _safe_admin_next(value):
+    # オープンリダイレクト対策: 管理画面内のパスのみ許可
+    if value and value.startswith("/admin") and "\\" not in value:
+        return value
+    return url_for("admin.dashboard")
+
+
+def start_staff_session(*, name, email, method):
+    """学生課としてログインした状態にし、操作履歴に記録する。"""
+    session["is_admin"] = True
+    session["staff_name"] = name
+    session["staff_email"] = email
+    session["staff_method"] = method
+    audit.record("login", detail=audit.METHOD_LABELS.get(method, method))
+
+
+def password_login_enabled():
+    return bool(current_app.config.get("ADMIN_PASSWORD"))
+
+
 @bp.route("/login", methods=["GET", "POST"])
 def login():
+    next_url = _safe_admin_next(request.args.get("next", ""))
     if request.method == "POST":
+        if not password_login_enabled():
+            abort(404)
         password = request.form.get("password", "")
-        if hmac.compare_digest(password.encode(), current_app.config["ADMIN_PASSWORD"].encode()):
-            session["is_admin"] = True
-            next_url = request.args.get("next", "")
-            # オープンリダイレクト対策: 管理画面内のパスのみ許可
-            if not next_url.startswith("/admin"):
-                next_url = url_for("admin.dashboard")
+        staff_name = (request.form.get("staff_name") or "").strip()
+        if not staff_name or len(staff_name) > 50:
+            flash("担当者名を50文字以内で入力してください(操作履歴に記録されます)。", "error")
+        elif hmac.compare_digest(password.encode(), current_app.config["ADMIN_PASSWORD"].encode()):
+            start_staff_session(name=staff_name, email=None, method="password")
             return redirect(next_url)
-        flash("パスワードが違います。", "error")
-    return render_template("admin/login.html")
+        else:
+            flash("パスワードが違います。", "error")
+    return render_template(
+        "admin/login.html",
+        next=next_url,
+        google_enabled=accounts.staff_google_enabled(),
+        password_enabled=password_login_enabled(),
+    )
 
 
 @bp.route("/logout", methods=["POST"])
 def logout():
-    session.pop("is_admin", None)
+    for key in ("is_admin", "staff_name", "staff_email", "staff_method"):
+        session.pop(key, None)
     flash("ログアウトしました。", "info")
     return redirect(url_for("public.index"))
+
+
+@bp.route("/audit")
+@login_required
+def audit_log():
+    return render_template("admin/audit.html", logs=audit.list_logs(limit=300))
 
 
 @bp.route("/")
@@ -55,11 +91,13 @@ def dashboard():
     tab = request.args.get("tab", "pending")
     if tab not in events.STATUS_LABELS:
         tab = "pending"
+    rows = events.list_for_admin(tab)
     return render_template(
         "admin/dashboard.html",
         tab=tab,
-        events=events.list_for_admin(tab),
+        events=rows,
         counts=events.count_by_status(),
+        reviewers=audit.last_reviewers([e["id"] for e in rows]),
     )
 
 
@@ -130,7 +168,8 @@ def analytics_csv():
 def review(event_id):
     event = events.get_event(event_id) or abort(404)
     return render_template(
-        "admin/review.html", event=event, registrations=events.list_registrations(event_id)
+        "admin/review.html", event=event, registrations=events.list_registrations(event_id),
+        logs=audit.list_logs(event_id=event_id), last_review=audit.last_review(event_id),
     )
 
 
@@ -155,7 +194,14 @@ def registrations_csv(event_id):
 @login_required
 def delete_registration(registration_id):
     event_id = request.form.get("event_id", type=int)
+    row = get_db().execute(
+        "SELECT r.name, r.event_id, e.title FROM registrations r JOIN events e ON e.id = r.event_id WHERE r.id = ?",
+        (registration_id,),
+    ).fetchone()
     events.delete_registration(registration_id)
+    if row:
+        audit.record("cancel_registration", event_id=row["event_id"], event_title=row["title"],
+                     detail=f"申込者: {row['name']}")
     flash("参加申込を取り消しました。", "info")
     return redirect(url_for("admin.review", event_id=event_id) if event_id else url_for("admin.dashboard"))
 
@@ -163,7 +209,7 @@ def delete_registration(registration_id):
 @bp.route("/events/<int:event_id>/status", methods=["POST"])
 @login_required
 def change_status(event_id):
-    events.get_event(event_id) or abort(404)
+    event = events.get_event(event_id) or abort(404)
     status = request.form.get("status")
     if status not in events.STATUS_LABELS:
         abort(400)
@@ -172,6 +218,7 @@ def change_status(event_id):
         flash("差し戻す場合は理由をコメントに記入してください。", "error")
         return redirect(url_for("admin.review", event_id=event_id))
     events.set_status(event_id, status, comment)
+    audit.record(audit.STATUS_ACTIONS[status], event=event, detail=comment or None)
     flash(f"ステータスを「{events.STATUS_LABELS[status]}」に変更しました。", "info")
     return redirect(url_for("admin.dashboard", tab="pending"))
 
@@ -194,11 +241,20 @@ def new_event():
         event_id, _ = events.create_event(
             data, source="office", status="approved", poster_filename=poster
         )
+        audit.record("create", event_id=event_id, event_title=data["title"])
         flash("イベントを登録し、公開しました。", "info")
         return redirect(url_for("public.detail", event_id=event_id))
     return render_template(
         "admin/edit.html", form={"organizer_type": "学生課・大学"}, event=None
     )
+
+
+_EDIT_LABELS = {
+    "title": "イベント名", "description": "内容", "category": "カテゴリ", "start_at": "開始日時",
+    "end_at": "終了日時", "location": "場所", "organizer_name": "主催者", "organizer_type": "主催者の種別",
+    "contact_email": "連絡先", "capacity": "定員", "registration_mode": "参加方法",
+    "registration_info": "申込方法",
+}
 
 
 @bp.route("/events/<int:event_id>/edit", methods=["GET", "POST"])
@@ -222,6 +278,11 @@ def edit_event(event_id):
                 flash(e, "error")
             return render_template("admin/edit.html", form=request.form, event=event), 400
         events.update_event(event_id, data, poster_filename=poster)
+        changed = [label for key, label in _EDIT_LABELS.items() if str(event[key] or "") != str(data.get(key) or "")]
+        if poster != event["poster_filename"]:
+            changed.append("ポスター")
+        audit.record("edit", event_id=event_id, event_title=data["title"],
+                     detail=("変更: " + "、".join(changed)) if changed else "変更なし")
         flash("イベント情報を更新しました。", "info")
         return redirect(url_for("admin.review", event_id=event_id))
     return render_template("admin/edit.html", form=dict(event), event=event)
@@ -231,6 +292,8 @@ def edit_event(event_id):
 @login_required
 def delete_event(event_id):
     event = events.get_event(event_id) or abort(404)
+    # 先に記録する(削除後は event_id が空になり、イベント名だけが履歴に残る)
+    audit.record("delete", event_id=event_id, event_title=event["title"])
     events.delete_event(event_id)
     events.delete_poster(event["poster_filename"])
     flash("イベントを削除しました。", "info")
@@ -247,12 +310,14 @@ def campus_map():
         y = request.form.get("y", type=float)
         if request.form.get("reset"):
             places.reset_campus_pin(name)
+            audit.record("reset_pin", detail=name)
             flash(f"「{name}」のピンを初期位置に戻しました。", "info")
         elif x is None or y is None:
             flash("ピンの位置を地図上でクリックして指定してください。", "error")
         else:
             try:
                 places.set_campus_pin(name, x, y)
+                audit.record("set_pin", detail=name)
                 flash(f"「{name}」のピンの位置を保存しました。", "info")
             except ValueError as e:
                 flash(str(e), "error")

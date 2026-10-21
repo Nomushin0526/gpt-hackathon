@@ -34,7 +34,7 @@
           <a href="{{ url_for('accounts.login', next=request.path) }}" class="nav-login">ログイン</a>
         {% endif %}
         {% if session.is_admin %}
-          <a href="{{ url_for('admin.dashboard') }}" class="nav-admin">学生課管理</a>
+          <a href="{{ url_for('admin.dashboard') }}" class="nav-admin">学生課管理{% if current_staff %}({{ current_staff.name }}){% endif %}</a>
           <form method="post" action="{{ url_for('admin.logout') }}" class="inline">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
             <button class="link-button">学生課ログアウト</button>

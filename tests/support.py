@@ -157,7 +157,7 @@ class AppTestCase(unittest.TestCase):
         client = client or self.client
         return self.csrf_post(
             "/admin/login",
-            {"password": self.app.config["ADMIN_PASSWORD"]},
+            {"password": self.app.config["ADMIN_PASSWORD"], "staff_name": "テスト担当"},
             client=client,
         )
 

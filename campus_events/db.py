@@ -66,6 +66,21 @@ def migrate_db():
         )
     if "submitted_by_user_id" not in columns:
         db.execute("ALTER TABLE events ADD COLUMN submitted_by_user_id INTEGER REFERENCES users (id) ON DELETE SET NULL")
+    if "audit_logs" not in tables:
+        db.executescript("""
+CREATE TABLE audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT NOT NULL,
+    actor_name TEXT NOT NULL,
+    actor_email TEXT,
+    auth_method TEXT,
+    action TEXT NOT NULL,
+    event_id INTEGER REFERENCES events (id) ON DELETE SET NULL,
+    event_title TEXT,
+    detail TEXT
+);
+CREATE INDEX idx_audit_logs_event ON audit_logs (event_id, id);
+        """)
     if "campus_pins" not in tables:
         db.execute("CREATE TABLE campus_pins (name TEXT PRIMARY KEY, x REAL NOT NULL, y REAL NOT NULL)")
     if "registrations" not in tables:

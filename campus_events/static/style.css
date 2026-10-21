@@ -231,3 +231,12 @@ label.checkbox input { width: auto; margin: 0; }
 .submission-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
 .submission-list li { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; }
 .submission-list li > div:first-child { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+
+/* 学生課: 操作履歴 */
+.audit-table td { white-space: normal; min-width: 90px; }
+.audit-detail { max-width: 360px; font-size: 13px; color: var(--muted); }
+.audit-action { font-weight: 700; font-size: 13px; }
+.audit-approve { color: #166534; }
+.audit-reject, .audit-delete, .audit-cancel_registration { color: var(--danger); }
+.badge-warn-soft { background: var(--warn-bg); color: var(--warn-text); }
+.staff-only h2 .small { font-weight: 400; }

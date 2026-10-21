@@ -34,6 +34,8 @@ def create_app(test_config=None):
         GOOGLE_CLIENT_SECRET=os.environ.get("GOOGLE_CLIENT_SECRET", ""),
         GOOGLE_REDIRECT_URI=os.environ.get("GOOGLE_REDIRECT_URI", ""),
         ALLOWED_EMAIL_DOMAIN=os.environ.get("ALLOWED_EMAIL_DOMAIN", "st.kitasato-u.ac.jp"),
+        # 学生課として Google ログインできる職員のメールアドレス(カンマ区切り)
+        STAFF_EMAILS=os.environ.get("STAFF_EMAILS", ""),
         # Google の設定なしで動作確認するための開発用ログイン。人に公開するときは必ず無効にする
         ALLOW_DEV_LOGIN=os.environ.get("ALLOW_DEV_LOGIN") == "1",
         PERMANENT_SESSION_LIFETIME=30 * 24 * 60 * 60,
@@ -88,6 +90,12 @@ def create_app(test_config=None):
         is_open_for_registration=is_open_for_registration,
         map_info=places.map_info,
     )
+
+    @app.context_processor
+    def staff_context():
+        from . import audit
+        return {"current_staff": audit.current_staff(), "AUDIT_ACTIONS": audit.ACTION_LABELS,
+                "AUTH_METHODS": audit.METHOD_LABELS}
 
     from . import accounts, admin, behavior, data_science, public
 

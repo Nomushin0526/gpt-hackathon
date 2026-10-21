@@ -1,14 +1,28 @@
 {% extends "base.html" %}
 {% block title %}学生課ログイン | {% endblock %}
 {% block content %}
-<div class="card narrow">
+<div class="card narrow login-card">
   <h1>学生課ログイン</h1>
-  <form method="post" class="form">
-    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <label>パスワード
-      <input type="password" name="password" required autofocus>
-    </label>
-    <button class="button">ログイン</button>
-  </form>
+  <p class="small">ログインした担当者の名前は、承認・差し戻し・編集などの操作履歴に記録されます(学生課の画面でのみ表示)。</p>
+
+  {% if google_enabled %}
+    <a class="button google-button" href="{{ url_for('accounts.google_start', **{'for': 'staff', 'next': next}) }}">Google でログイン(担当者用)</a>
+  {% endif %}
+
+  {% if password_enabled %}
+    <form method="post" action="{{ url_for('admin.login', next=next) }}" class="form{% if google_enabled %} dev-login{% endif %}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      {% if google_enabled %}<p class="small">Google でログインできない場合は、共通パスワードでもログインできます。</p>{% endif %}
+      <label for="staff-name">担当者名 <span class="req">必須</span>
+        <input id="staff-name" name="staff_name" required maxlength="50" autocomplete="name" placeholder="例: 学生課 北里">
+      </label>
+      <label for="admin-password">パスワード
+        <input id="admin-password" type="password" name="password" required>
+      </label>
+      <button class="button">ログイン</button>
+    </form>
+  {% elif not google_enabled %}
+    <p class="notice">ログイン方法が設定されていません。</p>
+  {% endif %}
 </div>
 {% endblock %}

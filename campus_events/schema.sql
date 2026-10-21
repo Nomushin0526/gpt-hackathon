@@ -1,5 +1,6 @@
 DROP TABLE IF EXISTS event_views;
 DROP TABLE IF EXISTS event_favorites;
+DROP TABLE IF EXISTS audit_logs;
 DROP TABLE IF EXISTS registrations;
 DROP TABLE IF EXISTS campus_pins;
 DROP TABLE IF EXISTS events;
@@ -68,3 +69,18 @@ CREATE TABLE campus_pins (
     x REAL NOT NULL,
     y REAL NOT NULL
 );
+
+-- 学生課の操作履歴(誰が・いつ・何をしたか)。学生課の画面だけで表示する。
+-- イベントを削除しても履歴は残す(event_id は NULL になり、event_title に名前を残す)
+CREATE TABLE audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT NOT NULL,
+    actor_name TEXT NOT NULL,
+    actor_email TEXT,
+    auth_method TEXT,
+    action TEXT NOT NULL,
+    event_id INTEGER REFERENCES events (id) ON DELETE SET NULL,
+    event_title TEXT,
+    detail TEXT
+);
+CREATE INDEX idx_audit_logs_event ON audit_logs (event_id, id);

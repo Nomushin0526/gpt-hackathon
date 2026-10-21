@@ -46,6 +46,16 @@ def google_enabled():
     return bool(current_app.config.get("GOOGLE_CLIENT_ID") and current_app.config.get("GOOGLE_CLIENT_SECRET"))
 
 
+def staff_emails():
+    """学生課として Google ログインできるメールアドレスの一覧(環境変数 STAFF_EMAILS)。"""
+    raw = current_app.config.get("STAFF_EMAILS") or ""
+    return {e.strip().lower() for e in raw.replace("\n", ",").split(",") if e.strip()}
+
+
+def staff_google_enabled():
+    return google_enabled() and bool(staff_emails())
+
+
 def dev_login_enabled():
     return bool(current_app.config.get("ALLOW_DEV_LOGIN"))
 
@@ -184,8 +194,11 @@ def _decode_id_token(id_token):
         raise LoginError("Google から受け取った情報を読み取れませんでした。") from None
 
 
-def validate_claims(claims, *, nonce):
-    """ID トークンの中身を検証し、(email, name, sub) を返す。"""
+def validate_claims(claims, *, nonce, staff=False):
+    """ID トークンの中身を検証し、(email, name, sub) を返す。
+
+    staff=True のときは、学生のドメインの代わりに学生課の登録メールアドレス(STAFF_EMAILS)で判定する。
+    """
     if claims.get("iss") not in GOOGLE_ISSUERS:
         raise LoginError("ログイン情報の発行元が正しくありません。")
     if claims.get("aud") != current_app.config["GOOGLE_CLIENT_ID"]:
@@ -197,6 +210,12 @@ def validate_claims(claims, *, nonce):
     email = (claims.get("email") or "").lower()
     if claims.get("email_verified") is not True or not email:
         raise LoginError("メールアドレスが確認されていない Google アカウントです。")
+    if staff:
+        if email not in staff_emails():
+            raise LoginError("このアカウントは学生課の担当者として登録されていません。")
+        if not claims.get("sub"):
+            raise LoginError("Google アカウントの情報が不足しています。")
+        return email, (claims.get("name") or email.split("@")[0])[:50], str(claims["sub"])
     domain = allowed_domain()
     # hd は Google Workspace(大学)が管理するアカウントにだけ付く。個人の Google アカウントは拒否する
     if not email.endswith("@" + domain) or not claims.get("hd"):
@@ -223,10 +242,14 @@ def login():
 
 @bp.route("/login/google")
 def google_start():
-    if not google_enabled():
+    staff = request.args.get("for") == "staff"
+    if not (staff_google_enabled() if staff else google_enabled()):
         abort(404)
     state, nonce = secrets.token_urlsafe(24), secrets.token_urlsafe(24)
-    session["oauth"] = {"state": state, "nonce": nonce, "next": _safe_next(request.args.get("next"))}
+    session["oauth"] = {
+        "state": state, "nonce": nonce, "staff": staff,
+        "next": (request.args.get("next") if staff else None) or _safe_next(request.args.get("next")),
+    }
     params = {
         "client_id": current_app.config["GOOGLE_CLIENT_ID"],
         "redirect_uri": _redirect_uri(),
@@ -234,9 +257,10 @@ def google_start():
         "scope": "openid email profile",
         "state": state,
         "nonce": nonce,
-        "hd": allowed_domain(),  # 大学のアカウントを選びやすくするヒント(検証は validate_claims で行う)
         "prompt": "select_account",
     }
+    if not staff:
+        params["hd"] = allowed_domain()  # 大学のアカウントを選びやすくするヒント(検証は validate_claims で行う)
     return redirect(f"{GOOGLE_AUTH_URL}?{urllib.parse.urlencode(params)}")
 
 
@@ -258,10 +282,18 @@ def google_callback():
         except Exception:
             current_app.logger.warning("Google のトークン取得に失敗しました", exc_info=True)
             raise LoginError("Google との通信に失敗しました。時間をおいてお試しください。") from None
-        email, name, sub = validate_claims(_decode_id_token(token.get("id_token", "")), nonce=oauth["nonce"])
+        email, name, sub = validate_claims(
+            _decode_id_token(token.get("id_token", "")), nonce=oauth["nonce"], staff=oauth.get("staff", False)
+        )
     except LoginError as e:
         flash(str(e), "error")
-        return redirect(url_for("accounts.login"))
+        return redirect(url_for("admin.login" if oauth and oauth.get("staff") else "accounts.login"))
+    if oauth.get("staff"):
+        from .admin import _safe_admin_next, start_staff_session
+
+        start_staff_session(name=name, email=email, method="google")
+        flash(f"学生課の担当者 {name} さんとしてログインしました。", "info")
+        return redirect(_safe_admin_next(oauth["next"]))
     login_user(email=email, name=name, google_sub=sub)
     flash(f"{name} さんとしてログインしました。", "info")
     return redirect(oauth["next"])

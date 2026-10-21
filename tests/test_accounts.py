@@ -63,7 +63,7 @@ def google_login(client, monkeypatch, email="taro@" + DOMAIN, **overrides):
 
 def admin_event(client, title, description, *, mode="site", days=3, capacity=""):
     token = csrf(client, "/admin/login")
-    client.post("/admin/login", data={"password": "secret", "_csrf_token": token})
+    client.post("/admin/login", data={"password": "secret", "staff_name": "テスト担当", "_csrf_token": token})
     start = now_jst() + timedelta(days=days)
     res = client.post("/admin/events/new", data={
         "title": title, "category": "学術・研究", "description": description,
