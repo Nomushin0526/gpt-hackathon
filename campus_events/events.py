@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 from flask import current_app
 from werkzeug.utils import secure_filename
 
+from . import places
 from .db import get_db
 
 JST = ZoneInfo("Asia/Tokyo")
@@ -53,34 +54,6 @@ REGISTRATION_MODES = {
     "external": "外部フォーム・窓口などで申込を受け付ける",
 }
 
-# 相模原キャンパスの施設名(開催場所の入力候補)。
-# 出典: 北里大学 相模原キャンパスマップ・中央図書館開館案内
-CAMPUS_LOCATIONS = [
-    "L1号館(一般教育棟)",
-    "L1号館 2階 学生食堂",
-    "L1号館 6階 大講義室",
-    "L2号館",
-    "S号館(理学部校舎)",
-    "MB号館(海洋生命科学部校舎)",
-    "新M号館(医学部校舎)",
-    "A1号館(医療衛生学部校舎)",
-    "A2号館(医療衛生学部校舎)",
-    "N号館(看護学部校舎)",
-    "FR号館(未来工学部校舎)",
-    "V号館(獣医学部校舎)",
-    "臨床教育研究棟(IPE棟)",
-    "多目的研究棟C棟",
-    "北里大学中央図書館",
-    "IPE棟図書館",
-    "学生ホール",
-    "総合体育館",
-    "部室棟",
-    "第一総合グラウンド",
-    "薬用植物園",
-    "クレセント",
-    "オンライン",
-]
-
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 
 # 受付番号は読み間違えやすい文字(0/O, 1/I/L)を除いた英数字で構成する
@@ -115,6 +88,7 @@ def validate_event_form(form, *, require_contact):
     text("title", "イベント名", max_len=100)
     text("description", "イベント内容", max_len=4000)
     text("location", "開催場所", max_len=100)
+    data["location_lat"], data["location_lng"] = _location_coords(form, data["location"])
     text("organizer_name", "主催者・団体名", max_len=100)
     text("contact_email", "連絡先メールアドレス", required=require_contact, max_len=200)
     text("registration_info", "申込方法・申込先", required=False, max_len=500)
@@ -168,6 +142,20 @@ def validate_event_form(form, *, require_contact):
     return data, errors
 
 
+def _location_coords(form, location):
+    """候補から選んだ学外の場所の緯度経度。学内施設は施設の位置を使うので保存しない。"""
+    if not location or places.find_campus_place(location):
+        return None, None
+    try:
+        lat = float(form.get("location_lat") or "")
+        lng = float(form.get("location_lng") or "")
+    except ValueError:
+        return None, None
+    if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+        return None, None
+    return round(lat, 6), round(lng, 6)
+
+
 def validate_registration_form(form):
     errors = []
     name = (form.get("name") or "").strip()
@@ -204,7 +192,7 @@ def delete_poster(filename):
 
 
 _EVENT_COLUMNS = [
-    "title", "description", "category", "start_at", "end_at", "location",
+    "title", "description", "category", "start_at", "end_at", "location", "location_lat", "location_lng",
     "organizer_name", "organizer_type", "contact_email", "capacity",
     "registration_mode", "registration_info", "note_to_office",
 ]
@@ -216,17 +204,18 @@ _SELECT_EVENTS = (
 )
 
 
-def create_event(data, *, source, status, poster_filename=None):
+def create_event(data, *, source, status, poster_filename=None, submitted_by_user_id=None):
     db = get_db()
     ts = now_jst().strftime(DATETIME_FORMAT)
     receipt = generate_receipt_code()
     while db.execute("SELECT 1 FROM events WHERE receipt_code = ?", (receipt,)).fetchone():
         receipt = generate_receipt_code()
     columns = _EVENT_COLUMNS + [
-        "poster_filename", "source", "status", "receipt_code", "created_at", "updated_at",
+        "poster_filename", "source", "status", "receipt_code", "submitted_by_user_id",
+        "created_at", "updated_at",
     ]
     values = [data.get(c) for c in _EVENT_COLUMNS] + [
-        poster_filename, source, status, receipt, ts, ts,
+        poster_filename, source, status, receipt, submitted_by_user_id, ts, ts,
     ]
     cur = db.execute(
         f"INSERT INTO events ({', '.join(columns)}) VALUES ({', '.join('?' * len(columns))})",
@@ -338,13 +327,13 @@ def register(event_id, data):
     try:
         cur = db.execute(
             """
-            INSERT INTO registrations (event_id, name, email, student_number, created_at)
-            SELECT ?, ?, ?, ?, ?
+            INSERT INTO registrations (event_id, name, email, student_number, user_id, created_at)
+            SELECT ?, ?, ?, ?, ?, ?
             WHERE (SELECT capacity FROM events WHERE id = ?) IS NULL
                OR (SELECT COUNT(*) FROM registrations WHERE event_id = ?)
                   < (SELECT capacity FROM events WHERE id = ?)
             """,
-            (event_id, data["name"], data["email"], data["student_number"],
+            (event_id, data["name"], data["email"], data["student_number"], data.get("user_id"),
              now_jst().strftime(DATETIME_FORMAT), event_id, event_id, event_id),
         )
     except sqlite3.IntegrityError:

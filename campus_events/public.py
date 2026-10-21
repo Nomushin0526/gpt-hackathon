@@ -5,7 +5,10 @@ from flask import (
     render_template, request, send_from_directory, url_for,
 )
 
-from . import events
+from . import behavior, events, places
+from .accounts import current_user
+from .db import get_db
+from .recommendations import get_recommendations
 
 bp = Blueprint("public", __name__)
 
@@ -21,7 +24,22 @@ def index():
     if filters["period"] not in ("upcoming", "week", "month", "past"):
         filters["period"] = "upcoming"
     results = events.search_public_events(**filters)
-    return render_template("index.html", events=results, filters=filters)
+    recommendation_preview = None
+    # 条件を指定して探しているときは検索結果に集中できるよう、
+    # おすすめ欄は通常のトップページにだけ表示する。
+    if (
+        filters["period"] == "upcoming"
+        and not filters["keyword"]
+        and not filters["category"]
+        and not filters["organizer_type"]
+    ):
+        recommendation_preview = get_recommendations(
+            behavior.get_visitor_id(create=False), limit=3
+        )
+    return render_template(
+        "index.html", events=results, filters=filters,
+        recommendation_preview=recommendation_preview,
+    )
 
 
 def _public_event_or_404(event_id):
@@ -33,7 +51,23 @@ def _public_event_or_404(event_id):
 
 @bp.route("/events/<int:event_id>")
 def detail(event_id):
-    return render_template("detail.html", event=_public_event_or_404(event_id), form={})
+    event = _public_event_or_404(event_id)
+    if request.method == "GET":
+        behavior.record_view(event_id)
+    return render_template(
+        "detail.html", event=event, form={}, my_registration=_my_registration(event_id)
+    )
+
+
+def _my_registration(event_id):
+    """ログイン中の学生がこのイベントに申込済みなら、その申込。"""
+    user = current_user()
+    if not user:
+        return None
+    return get_db().execute(
+        "SELECT * FROM registrations WHERE event_id = ? AND (user_id = ? OR email = ?)",
+        (event_id, user["id"], user["email"]),
+    ).fetchone()
 
 
 @bp.route("/events/<int:event_id>/register", methods=["POST"])
@@ -42,7 +76,15 @@ def register(event_id):
     if not events.is_open_for_registration(event):
         flash("このイベントはこのサイトでの参加申込を受け付けていません。", "error")
         return redirect(url_for("public.detail", event_id=event_id))
-    data, errors = events.validate_registration_form(request.form)
+    form = request.form
+    user = current_user()
+    if user:
+        # ログイン中は、アカウントのメールアドレスで申し込む(他人のアドレスでは申し込めない)
+        form = request.form.copy()
+        form["email"] = user["email"]
+    data, errors = events.validate_registration_form(form)
+    if user:
+        data["user_id"] = user["id"]
     if not errors:
         try:
             events.register(event_id, data)
@@ -52,7 +94,8 @@ def register(event_id):
         for e in errors:
             flash(e, "error")
         return render_template(
-            "detail.html", event=events.get_event(event_id), form=request.form
+            "detail.html", event=events.get_event(event_id), form=request.form,
+            my_registration=_my_registration(event_id),
         ), 400
     flash(f"「{event['title']}」への参加申込を受け付けました。", "info")
     return redirect(url_for("public.detail", event_id=event_id))
@@ -63,6 +106,12 @@ def registration_counts():
     """一覧・詳細ページの申込人数をリアルタイム更新するための API。"""
     ids = [int(i) for i in request.args.get("ids", "").split(",") if i.isdigit()][:100]
     return jsonify(events.registration_counts(ids))
+
+
+@bp.route("/api/places")
+def place_search():
+    """開催場所の入力欄に出す候補(学内施設 + 学外の場所)。"""
+    return jsonify(places.search(request.args.get("q", "")[:100]))
 
 
 @bp.route("/events/<int:event_id>/calendar.ics")
@@ -96,11 +145,14 @@ def submit():
             for e in errors:
                 flash(e, "error")
             return render_template("submit.html", form=request.form), 400
+        user = current_user()
         _, receipt = events.create_event(
-            data, source="student", status="pending", poster_filename=poster
+            data, source="student", status="pending", poster_filename=poster,
+            submitted_by_user_id=user["id"] if user else None,
         )
         return redirect(url_for("public.submitted", code=receipt))
-    return render_template("submit.html", form={})
+    user = current_user()
+    return render_template("submit.html", form={"contact_email": user["email"]} if user else {})
 
 
 @bp.route("/submit/done/<code>")

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}キャンパスマップのピン設定 | {% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.dashboard') }}">← 管理画面に戻る</a></p>
+<h1>キャンパスマップのピン設定</h1>
+<p class="notice">
+  イベント詳細ページのキャンパスマップに表示するピンの位置です。施設を選んで、地図上の建物をクリックしてください。
+  初期位置は緯度経度からの概算なので、ずれている施設は修正してください。「未設定」の施設はピンが表示されません。
+</p>
+
+<label class="checkbox pin-show-all"><input type="checkbox" class="js-pin-show-all"> すべての建物名を表示する(ずれている建物を探すとき)</label>
+
+<div class="pin-editor js-pin-editor" data-map-width="{{ map_size[0] }}" data-map-height="{{ map_size[1] }}">
+  <ul class="pin-list">
+    {% for p in places %}
+      <li>
+        <button type="button" class="pin-choice js-pin-choice{% if p.name == selected %} is-selected{% endif %}" data-name="{{ p.name }}">
+          {{ p.name }}
+          {% if p.pin_pct %}<span class="small">設定済み</span>{% else %}<span class="pin-unset">未設定</span>{% endif %}
+        </button>
+      </li>
+    {% endfor %}
+  </ul>
+
+  <div>
+    <p class="js-pin-hint small">左の一覧から施設を選んでください。</p>
+    {% with pins=places, active=selected, map_class="is-editable js-pin-map" %}{% include "_campus_map.html" %}{% endwith %}
+    <form method="post" class="actions pin-form js-pin-form">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="name" value="{{ selected }}">
+      <input type="hidden" name="x">
+      <input type="hidden" name="y">
+      <button class="button" disabled>この位置で保存</button>
+      <button class="button button-secondary" name="reset" value="1" disabled>初期位置に戻す</button>
+    </form>
+  </div>
+</div>
+<section class="card pin-export">
+  <h2>修正したピン位置({{ overrides|length }} 件)</h2>
+  {% if overrides %}
+    <p class="small">ここで修正した位置は、このパソコンのデータベースにだけ保存されています。チーム全員の画面に反映するには、
+      開発用のパソコンでアプリを止めて <code>flask apply-pins</code> を実行し、書き換わった <code>campus_events/places.py</code> をコミットしてください。
+      別のパソコンで直した場合は、下の一覧を開発担当に送ってください。</p>
+    <textarea class="pin-export-text" rows="{{ overrides|length + 1 }}" readonly>{% for name, old, new in overrides %}{{ name }}: pin=({{ new[0] }}, {{ new[1] }})  ※元: {{ "pin=(%d, %d)"|format(*old) if old else "未設定" }}
+{% endfor %}</textarea>
+  {% else %}
+    <p class="small">まだ修正はありません。</p>
+  {% endif %}
+</section>
+{% endblock %}

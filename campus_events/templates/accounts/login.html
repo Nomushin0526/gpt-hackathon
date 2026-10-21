@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}ログイン | {% endblock %}
+{% block content %}
+<div class="card narrow login-card">
+  <h1>ログイン</h1>
+  <p>大学の Google アカウント(<strong>@{{ domain }}</strong>)でログインできます。ログインしなくても、イベントの閲覧・参加申込・応募はできます。</p>
+
+  {% if google_enabled %}
+    <a class="button google-button" href="{{ url_for('accounts.google_start', next=next) }}">Google でログイン</a>
+  {% elif not dev_login %}
+    <p class="notice">現在、ログインは準備中です。</p>
+  {% endif %}
+
+  {% if dev_login %}
+    <form method="post" action="{{ url_for('accounts.dev_login') }}" class="form dev-login">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="next" value="{{ next }}">
+      <p class="dev-warning"><strong>開発用ログイン</strong> 本人確認をせずにログインします。動作確認専用で、人に公開するときは必ず無効にしてください。</p>
+      <label for="dev-email">大学のメールアドレス
+        <input id="dev-email" type="email" name="email" required placeholder="例: example@{{ domain }}">
+      </label>
+      <button class="button button-secondary">開発用ログイン</button>
+    </form>
+  {% endif %}
+
+  <details class="login-privacy">
+    <summary>ログインすると何ができる? 何が記録される?</summary>
+    <ul>
+      <li>お気に入り・閲覧履歴・参加申込が、スマートフォンでもパソコンでも同じように使えます。</li>
+      <li>参加申込の氏名・メールアドレスが自動で入り、マイページから申込の確認・取消ができます。</li>
+      <li>自分が応募したイベントの審査状況を、受付番号なしでマイページから確認できます。</li>
+      <li>おすすめに、閲覧・お気に入りに加えて、申し込んだイベントも反映されます。</li>
+      <li>記録するのは Google アカウントのメールアドレスと名前、閲覧・お気に入り・申込の履歴です。パスワードは受け取りません。</li>
+      <li>閲覧履歴は 90 日で自動的に削除され、おすすめ画面からいつでも削除できます。学生課の分析画面には件数だけが表示され、誰が見たかは表示されません。</li>
+      <li>ログインする前にこのブラウザーで保存したお気に入り・閲覧履歴は、アカウントに引き継がれます。</li>
+    </ul>
+  </details>
+</div>
+{% endblock %}

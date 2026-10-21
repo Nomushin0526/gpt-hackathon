@@ -1,0 +1,23 @@
+<section class="ds-home-recommendations" aria-labelledby="home-recommendations-heading">
+  <div class="ds-home-recommendation-heading">
+    <div>
+      <h2 id="home-recommendations-heading">{{ 'あなたへのおすすめ' if recommendation_preview.mode == 'personalized' else 'まずはこちらをチェック' }}</h2>
+      <p>{% if recommendation_preview.mode == 'personalized' %}閲覧履歴とお気に入りから、内容の近いイベントを選びました。{% else %}公開中・開催前のイベントを、利用状況や開催日時から紹介しています。{% endif %}</p>
+    </div>
+    <a href="{{ url_for('ds.recommendations_page') }}">おすすめをもっと見る →</a>
+  </div>
+  <div class="event-list">
+    {% for item in recommendation_preview['items'] %}
+      <div class="ds-home-recommendation-card">
+        {% with event=item.event %}{% include "_event_card.html" %}{% endwith %}
+        {% if item.reason %}
+          <details class="ds-home-recommendation-reason">
+            <summary>おすすめの理由{% if item.similarity is not none %}<span>類似度 {{ '%.3f'|format(item.similarity) }}</span>{% endif %}</summary>
+            <p>{{ item.reason }}</p>
+            {% if item.similarity is not none %}<p>類似度は文章の文字特徴の近さを示す値です。参加確率ではありません。</p>{% endif %}
+          </details>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</section>

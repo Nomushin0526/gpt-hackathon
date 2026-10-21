@@ -6,6 +6,10 @@
   <a class="button" href="{{ url_for('public.submit') }}">＋ 自分たちのイベントを学生課に応募する</a>
 </section>
 
+{% if recommendation_preview is defined and recommendation_preview is not none and recommendation_preview['items'] %}
+  {% include "ds/_home_recommendations.html" %}
+{% endif %}
+
 <form class="filters" method="get">
   <input type="search" name="q" class="filter-keyword" value="{{ filters.keyword }}" placeholder="キーワードで検索(イベント名・場所・団体名)">
   <select name="category">

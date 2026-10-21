@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}マイページ | {% endblock %}
+{% block content %}
+<div class="admin-header">
+  <h1>マイページ</h1>
+  <p class="small">{{ user.name }}({{ user.email }})</p>
+</div>
+
+<nav class="tabs">
+  <a href="#registrations">参加申込 <span class="count">{{ registrations|length }}</span></a>
+  <a href="#submissions">応募したイベント <span class="count">{{ submissions|length }}</span></a>
+  <a href="{{ url_for('ds.favorites_page') }}">お気に入り</a>
+  <a href="{{ url_for('ds.recommendations_page') }}">おすすめ</a>
+</nav>
+
+<section class="card" id="registrations">
+  <h2>参加申込</h2>
+  {% if registrations %}
+    <div class="table-scroll">
+    <table class="table">
+      <thead><tr><th>開催日時</th><th>イベント</th><th>場所</th><th>申込日時</th><th></th></tr></thead>
+      <tbody>
+        {% for r in registrations %}
+          <tr>
+            <td>{{ r.start_at|dt }}</td>
+            <td>
+              {% if r.status == "approved" %}<a href="{{ url_for('public.detail', event_id=r.id) }}">{{ r.title }}</a>{% else %}{{ r.title }}{% endif %}
+            </td>
+            <td>{{ r.location }}</td>
+            <td>{{ r.registered_at|dt }}</td>
+            <td>
+              {% if r.start_at > now %}
+                <form method="post" action="{{ url_for('accounts.cancel_registration', registration_id=r.registration_id) }}" class="inline"
+                      onsubmit="return confirm('この申込を取り消します。よろしいですか?');">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <button class="link-button danger">取り消す</button>
+                </form>
+              {% else %}
+                <span class="small">終了</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="small">まだ参加申込はありません。<a href="{{ url_for('public.index') }}">イベントを探す</a></p>
+  {% endif %}
+</section>
+
+<section class="card" id="submissions">
+  <h2>応募したイベント</h2>
+  {% if submissions %}
+    <ul class="submission-list">
+      {% for e in submissions %}
+        <li>
+          <div>
+            <span class="status status-{{ e.status }}">{{ STATUS_LABELS[e.status] }}</span>
+            <strong>{{ e.title }}</strong>
+            <span class="small">開催 {{ format_range(e.start_at, e.end_at) }} ／ 受付番号 {{ e.receipt_code }}</span>
+          </div>
+          {% if e.review_comment %}
+            <div class="comment"><strong>学生課からのコメント</strong><p class="pre">{{ e.review_comment }}</p></div>
+          {% endif %}
+          {% if e.status == "approved" %}<a class="small" href="{{ url_for('public.detail', event_id=e.id) }}">公開ページを見る</a>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="small">ログイン中に応募したイベントがここに表示されます。<a href="{{ url_for('public.submit') }}">イベントを応募する</a></p>
+  {% endif %}
+</section>
+{% endblock %}

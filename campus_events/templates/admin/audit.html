@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}操作履歴 | 学生課管理 | {% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.dashboard') }}">← 管理画面に戻る</a></p>
+<div class="admin-header">
+  <h1>操作履歴</h1>
+</div>
+<p class="notice">学生課の担当者が、いつ・何を操作したかの記録です(新しい順に最大 300 件)。この画面と記録は学生課だけが見られ、学生には表示されません。
+「自己申告」は共通パスワードでログインしたときに入力された担当者名で、本人確認はしていません。</p>
+{% if logs %}
+  {% with logs=logs, show_event=True %}{% include "admin/_audit_table.html" %}{% endwith %}
+{% else %}
+  <p class="empty">まだ操作履歴はありません。</p>
+{% endif %}
+{% endblock %}

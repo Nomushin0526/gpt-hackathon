@@ -1,5 +1,22 @@
+DROP TABLE IF EXISTS event_views;
+DROP TABLE IF EXISTS event_favorites;
+DROP TABLE IF EXISTS audit_logs;
 DROP TABLE IF EXISTS registrations;
+DROP TABLE IF EXISTS campus_pins;
 DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS users;
+
+-- 大学の Google アカウントでログインした学生
+-- visitor_id: 閲覧履歴・お気に入りの記録に使う ID。ログイン中はどの端末でもこの ID を使う
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    google_sub TEXT NOT NULL UNIQUE,
+    visitor_id TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL,
+    last_login_at TEXT NOT NULL
+);
 
 -- 公開イベントと学生からの応募を 1 テーブルで管理する。
 -- status: pending(審査待ち) / approved(公開中) / rejected(差し戻し)
@@ -13,6 +30,8 @@ CREATE TABLE events (
     start_at TEXT NOT NULL,
     end_at TEXT,
     location TEXT NOT NULL,
+    location_lat REAL,
+    location_lng REAL,
     organizer_name TEXT NOT NULL,
     organizer_type TEXT NOT NULL,
     contact_email TEXT,
@@ -25,6 +44,7 @@ CREATE TABLE events (
     status TEXT NOT NULL DEFAULT 'pending',
     review_comment TEXT,
     receipt_code TEXT UNIQUE,
+    submitted_by_user_id INTEGER REFERENCES users (id) ON DELETE SET NULL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
@@ -38,6 +58,29 @@ CREATE TABLE registrations (
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     student_number TEXT,
+    user_id INTEGER REFERENCES users (id) ON DELETE SET NULL,
     created_at TEXT NOT NULL,
     UNIQUE (event_id, email)
 );
+
+-- 学生課が修正したキャンパスマップ上のピン位置(画像上のピクセル座標)
+CREATE TABLE campus_pins (
+    name TEXT PRIMARY KEY,
+    x REAL NOT NULL,
+    y REAL NOT NULL
+);
+
+-- 学生課の操作履歴(誰が・いつ・何をしたか)。学生課の画面だけで表示する。
+-- イベントを削除しても履歴は残す(event_id は NULL になり、event_title に名前を残す)
+CREATE TABLE audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT NOT NULL,
+    actor_name TEXT NOT NULL,
+    actor_email TEXT,
+    auth_method TEXT,
+    action TEXT NOT NULL,
+    event_id INTEGER REFERENCES events (id) ON DELETE SET NULL,
+    event_title TEXT,
+    detail TEXT
+);
+CREATE INDEX idx_audit_logs_event ON audit_logs (event_id, id);

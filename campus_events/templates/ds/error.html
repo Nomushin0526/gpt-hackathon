@@ -1,0 +1,3 @@
+{% extends 'ds/base.html' %}
+{% block ds_title %}入力を確認してください{% endblock %}
+{% block ds_content %}<section class="empty-state"><h1>入力を確認してください</h1><p role="alert">{{ message }}</p><a class="button button-primary" href="{{ url_for('admin.analytics_dashboard') }}">分析画面へ戻る</a></section>{% endblock %}

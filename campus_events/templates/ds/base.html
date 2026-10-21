@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}{% block ds_title %}イベントを見つける{% endblock %} | {% endblock %}
+
+{% block extra_css %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='ds/style.css') }}">
+  {% block ds_extra_css %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+  <div class="ds-page">
+    {% block ds_content %}{% endblock %}
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='ds/interactions.js') }}" defer></script>
+  {% block ds_scripts %}{% endblock %}
+{% endblock %}

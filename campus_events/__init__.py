@@ -3,9 +3,9 @@ import secrets
 
 from flask import Flask, abort, request, session
 
-from . import db
+from . import db, places
 from .events import (
-    CAMPUS_LOCATIONS, CATEGORIES, ORGANIZER_TYPES, REGISTRATION_MODES, SOURCE_LABELS,
+    CATEGORIES, ORGANIZER_TYPES, REGISTRATION_MODES, SOURCE_LABELS,
     STATUS_LABELS, is_full, is_open_for_registration, parse_dt,
 )
 
@@ -21,6 +21,25 @@ def create_app(test_config=None):
         MAX_CONTENT_LENGTH=5 * 1024 * 1024,
         # 学生課の管理画面パスワード。本番では必ず環境変数で設定すること。
         ADMIN_PASSWORD=os.environ.get("ADMIN_PASSWORD", "admin"),
+        # 学外の開催場所の検索に使う Photon(OpenStreetMap)互換の API。空にすると学内施設のみ候補に出す
+        PLACE_SEARCH_URL=os.environ.get("PLACE_SEARCH_URL", "https://photon.komoot.io/api/"),
+        DS_HISTORY_DAYS=90,
+        DS_COOKIE_MAX_AGE=180 * 24 * 60 * 60,
+        DS_VIEW_WEIGHT=1.0,
+        DS_VIEW_CAP=3,
+        DS_FAVORITE_WEIGHT=5.0,
+        DS_REGISTRATION_WEIGHT=8.0,
+        # 学生の Google ログイン。両方を設定するとログインボタンが有効になる
+        GOOGLE_CLIENT_ID=os.environ.get("GOOGLE_CLIENT_ID", ""),
+        GOOGLE_CLIENT_SECRET=os.environ.get("GOOGLE_CLIENT_SECRET", ""),
+        GOOGLE_REDIRECT_URI=os.environ.get("GOOGLE_REDIRECT_URI", ""),
+        ALLOWED_EMAIL_DOMAIN=os.environ.get("ALLOWED_EMAIL_DOMAIN", "st.kitasato-u.ac.jp"),
+        # 学生課として Google ログインできる職員のメールアドレス(カンマ区切り)
+        STAFF_EMAILS=os.environ.get("STAFF_EMAILS", ""),
+        # Google の設定なしで動作確認するための開発用ログイン。人に公開するときは必ず無効にする
+        ALLOW_DEV_LOGIN=os.environ.get("ALLOW_DEV_LOGIN") == "1",
+        PERMANENT_SESSION_LIFETIME=30 * 24 * 60 * 60,
+        SESSION_COOKIE_SAMESITE="Lax",
     )
     if test_config:
         app.config.update(test_config)
@@ -66,13 +85,25 @@ def create_app(test_config=None):
         STATUS_LABELS=STATUS_LABELS,
         SOURCE_LABELS=SOURCE_LABELS,
         REGISTRATION_MODES=REGISTRATION_MODES,
-        CAMPUS_LOCATIONS=CAMPUS_LOCATIONS,
+        CAMPUS_MAP_IMAGE=places.CAMPUS_MAP_IMAGE,
         is_full=is_full,
         is_open_for_registration=is_open_for_registration,
+        map_info=places.map_info,
     )
 
-    from . import admin, public
+    @app.context_processor
+    def staff_context():
+        from . import audit
+        return {"current_staff": audit.current_staff(), "AUDIT_ACTIONS": audit.ACTION_LABELS,
+                "AUTH_METHODS": audit.METHOD_LABELS}
+
+    from . import accounts, admin, behavior, data_science, public
 
     app.register_blueprint(public.bp)
     app.register_blueprint(admin.bp)
+    app.register_blueprint(data_science.bp)
+    behavior.init_app(app)
+    accounts.init_app(app)
+    from .seed_ds import seed_ds_demo_command
+    app.cli.add_command(seed_ds_demo_command)
     return app

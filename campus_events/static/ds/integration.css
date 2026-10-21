@@ -1,0 +1,62 @@
+/* 既存ページに差し込む部品だけに適用する。style.css / app.js は変更しない。 */
+.ds-skip-link {
+  position: absolute;
+  left: 16px;
+  top: -100px;
+  z-index: 20;
+  padding: 10px 14px;
+  border: 2px solid var(--primary);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--primary-dark);
+}
+.ds-skip-link:focus { top: 10px; }
+.ds-nav-link[aria-current="page"] { text-decoration: underline; text-underline-offset: 5px; }
+.ds-saved-badge { background: #ecfdf5; color: var(--primary-dark); }
+.ds-nav-link:focus-visible,
+.ds-detail-actions :is(a, button):focus-visible,
+.ds-home-recommendations :is(a, summary):focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+.ds-detail-actions { margin: 0 0 20px; padding: 12px 0 14px; border-bottom: 1px solid var(--border); }
+.ds-detail-action-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.ds-detail-action-buttons form { margin: 0; }
+.ds-detail-action-buttons > a { font-size: 14px; }
+.ds-detail-actions > p { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.ds-detail-actions [aria-pressed="true"] { background: #ecfdf5; color: var(--primary-dark); }
+
+/* トップの推薦は、検索条件・件数・検索結果の外に置く。 */
+.ds-home-recommendations { margin: 28px 0; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+.ds-home-recommendation-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 18px;
+  margin-bottom: 14px;
+}
+.ds-home-recommendation-heading h2 { margin: 0 0 4px; color: var(--primary-dark); font-size: 21px; }
+.ds-home-recommendation-heading p { margin: 0; color: var(--muted); font-size: 13px; }
+.ds-home-recommendation-heading > a { font-size: 14px; white-space: nowrap; }
+.ds-home-recommendations > .event-list { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+.ds-home-recommendation-card { min-width: 0; }
+.ds-home-recommendation-reason {
+  margin-top: 7px;
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ds-home-recommendation-reason summary { cursor: pointer; color: var(--primary-dark); font-weight: 600; }
+.ds-home-recommendation-reason summary span { display: inline-block; margin-left: 8px; font-size: 11px; font-weight: 400; }
+.ds-home-recommendation-reason p { margin: 8px 0 0; overflow-wrap: anywhere; }
+
+@media (max-width: 900px) {
+  .ds-home-recommendations > .event-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .ds-home-recommendations > .event-list { grid-template-columns: 1fr; }
+  .ds-home-recommendation-heading { align-items: flex-start; flex-direction: column; }
+  .ds-home-recommendation-heading h2 { font-size: 20px; }
+  .ds-detail-action-buttons { align-items: flex-start; flex-direction: column; }
+}
