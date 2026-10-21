@@ -18,7 +18,7 @@ CAMPUS_CENTER = (35.5392, 139.3938)
 
 # 学内施設。keys は開催場所の入力がこの文字列で始まれば、その施設とみなす(「L1号館 6階 大講義室」など)。
 # lat/lng: Google マップ / OpenStreetMap に登録された位置。不明な施設は None
-# 2026-10-21: S号館・新M号館・N号館・臨床教育研究棟のピンを、キャンパスに詳しい人が画面で置いた位置に修正。
+# 2026-10-21: S号館・新M号館・N号館・FR号館・V号館・臨床教育研究棟のピンを、キャンパスに詳しい人が画面で置いた位置に修正。
 #   N号館は元の緯度経度が別の建物を指していたため外し、ピンの位置から求める。
 # pin: キャンパスマップ上の位置。緯度経度から計算した概算(_LATLNG_TO_PIN)を元にしており、
 #      位置が不明な施設は None。学生課の管理画面(/admin/campus-map)でクリックして修正できる
@@ -31,8 +31,8 @@ CAMPUS_PLACES = [
     dict(name="A1号館(医療衛生学部校舎)", keys=["A1号館"], lat=35.540309, lng=139.393426, pin=(697, 314)),
     dict(name="A2号館(医療衛生学部校舎)", keys=["A2号館"], lat=35.54049, lng=139.39393, pin=(775, 290)),
     dict(name="N号館(看護学部校舎)", keys=["N号館"], lat=None, lng=None, pin=(553, 546)),
-    dict(name="FR号館(未来工学部校舎)", keys=["FR号館"], lat=None, lng=None, pin=None),
-    dict(name="V号館(獣医学部校舎)", keys=["V号館"], lat=None, lng=None, pin=None),
+    dict(name="FR号館(未来工学部校舎)", keys=["FR号館"], lat=None, lng=None, pin=(650, 200)),
+    dict(name="V号館(獣医学部校舎)", keys=["V号館"], lat=None, lng=None, pin=(1209, 347)),
     dict(name="臨床教育研究棟(IPE棟)", keys=["臨床教育研究棟", "IPE棟"], lat=None, lng=None, pin=(722, 471)),
     dict(name="多目的研究棟C棟", keys=["多目的研究棟C棟", "C棟"], lat=None, lng=None, pin=None),
     dict(name="北里大学中央図書館", keys=["北里大学中央図書館", "中央図書館"], lat=35.539636, lng=139.395013, pin=(975, 375)),
