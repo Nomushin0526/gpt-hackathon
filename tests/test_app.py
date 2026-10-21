@@ -350,7 +350,7 @@ def test_campus_event_shows_campus_map_pin_and_google_map(client):
 
 def test_campus_place_without_pin_shows_only_google_map(client):
     login(client)
-    add_event(client, location="S号館 101教室")
+    add_event(client, location="多目的研究棟C棟 101教室")
     page = client.get("/events/1").get_data(as_text=True)
     assert "campus-pin" not in page
     assert "maps.google.com/maps?q=" in page
@@ -403,9 +403,9 @@ def test_admin_can_move_campus_pin(client):
     assert client.get("/admin/campus-map").status_code == 302
     login(client)
     token = csrf(client, "/admin/campus-map")
-    client.post("/admin/campus-map", data={"name": "S号館(理学部校舎)", "x": "735", "y": "415",
+    client.post("/admin/campus-map", data={"name": "多目的研究棟C棟", "x": "735", "y": "415",
                                           "_csrf_token": token})
-    add_event(client, location="S号館")
+    add_event(client, location="多目的研究棟C棟")
     page = client.get("/events/1").get_data(as_text=True)
     assert "left: 50.0%; top: 50.0%;" in page
     # ピン位置から求めた概算の緯度経度で Google マップを表示する
@@ -415,6 +415,6 @@ def test_admin_can_move_campus_pin(client):
                                                 "_csrf_token": token}, follow_redirects=True)
     assert "施設が見つかりません" in res.get_data(as_text=True)
 
-    client.post("/admin/campus-map", data={"name": "S号館(理学部校舎)", "reset": "1",
+    client.post("/admin/campus-map", data={"name": "多目的研究棟C棟", "reset": "1",
                                           "_csrf_token": token})
     assert "campus-pin" not in client.get("/events/1").get_data(as_text=True)

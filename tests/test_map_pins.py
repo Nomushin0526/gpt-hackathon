@@ -43,11 +43,11 @@ def test_pin_page_lists_changed_pins(app):
     client = app.test_client()
     login(client)
     set_pin(client, "L2号館", 930, 250)
-    set_pin(client, "S号館(理学部校舎)", 600, 200)
+    set_pin(client, "多目的研究棟C棟", 600, 200)
     page = client.get("/admin/campus-map").get_data(as_text=True)
     assert "修正したピン位置(2 件)" in page
     assert "L2号館: pin=(930, 250)  ※元: pin=(924, 247)" in page
-    assert "S号館(理学部校舎): pin=(600, 200)  ※元: 未設定" in page
+    assert "多目的研究棟C棟: pin=(600, 200)  ※元: 未設定" in page
     assert "すべての建物名を表示する" in page
 
 
@@ -55,14 +55,14 @@ def test_apply_pins_rewrites_source_and_clears_overrides(app, source_copy):
     client = app.test_client()
     login(client)
     set_pin(client, "L2号館", 930, 250)
-    set_pin(client, "S号館(理学部校舎)", 600, 200)
+    set_pin(client, "多目的研究棟C棟", 600, 200)
 
     result = app.test_cli_runner().invoke(args=["apply-pins"])
     assert "2 件のピン位置を places.py に書き戻しました" in result.output
 
     text = source_copy.read_text(encoding="utf-8")
     assert 'dict(name="L2号館", keys=["L2号館"], lat=35.54082, lng=139.39489, pin=(930, 250))' in text
-    assert 'dict(name="S号館(理学部校舎)", keys=["S号館"], lat=None, lng=None, pin=(600, 200))' in text
+    assert 'dict(name="多目的研究棟C棟", keys=["多目的研究棟C棟", "C棟"], lat=None, lng=None, pin=(600, 200))' in text
     assert 'pin=(943, 297)' in text  # 修正していない施設はそのまま
     compile(text, str(source_copy), "exec")  # 書き戻した後も Python として正しい
     with app.app_context():
