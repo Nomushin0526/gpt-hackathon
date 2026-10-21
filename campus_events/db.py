@@ -2,6 +2,7 @@ import sqlite3
 
 import click
 from flask import current_app, g
+from flask.cli import with_appcontext
 
 
 def get_db():
@@ -127,10 +128,32 @@ def seed_db_command():
     click.echo("サンプルデータを投入しました。")
 
 
+@click.command("apply-pins")
+@with_appcontext
+@click.option("--keep", is_flag=True, help="書き戻した後も、データベースの修正値を残す")
+def apply_pins_command(keep):
+    """管理画面で修正したピン位置を campus_events/places.py に書き戻す(チームで共有するため)。"""
+    from . import places
+
+    changed = places.apply_pins_to_source()
+    if not changed:
+        click.echo("書き戻すピンの修正はありません。")
+        return
+    if not keep:
+        db = get_db()
+        db.executemany("DELETE FROM campus_pins WHERE name = ?", [(n,) for n in changed])
+        db.commit()
+    click.echo(f"{len(changed)} 件のピン位置を places.py に書き戻しました:")
+    for name in changed:
+        click.echo(f"  - {name}")
+    click.echo("git diff で確認し、コミットしてください。")
+
+
 def init_app(app):
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
     app.cli.add_command(seed_db_command)
     app.cli.add_command(migrate_db_command)
+    app.cli.add_command(apply_pins_command)
     with app.app_context():
         migrate_db()

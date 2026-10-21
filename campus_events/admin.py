@@ -324,6 +324,7 @@ def campus_map():
         return redirect(url_for("admin.campus_map", place=name))
     return render_template(
         "admin/campus_map.html",
+        overrides=places.pin_overrides(),
         places=places.campus_places(),
         selected=request.args.get("place", ""),
         map_size=places.CAMPUS_MAP_SIZE,

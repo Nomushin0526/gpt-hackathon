@@ -240,3 +240,9 @@ label.checkbox input { width: auto; margin: 0; }
 .audit-reject, .audit-delete, .audit-cancel_registration { color: var(--danger); }
 .badge-warn-soft { background: var(--warn-bg); color: var(--warn-text); }
 .staff-only h2 .small { font-weight: 400; }
+
+/* ピン設定: 全建物名の表示と書き出し */
+.pin-show-all { margin: 8px 0; }
+.campus-map.is-editable.show-all-labels .campus-pin:not(.is-active) .campus-pin-label { display: block; font-size: 10px; padding: 1px 5px; bottom: 16px; opacity: .92; }
+.pin-export { margin-top: 20px; }
+.pin-export-text { font-family: ui-monospace, Menlo, monospace; font-size: 13px; }

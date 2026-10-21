@@ -273,4 +273,11 @@
   setupRegistrationFields();
   setupPlaceFields();
   setupPinEditor();
+
+  // ピン設定画面: すべての建物名を表示する切り替え
+  document.querySelectorAll(".js-pin-show-all").forEach(function (box) {
+    var map = document.querySelector(".js-pin-map");
+    if (!map) return;
+    box.addEventListener("change", function () { map.classList.toggle("show-all-labels", box.checked); });
+  });
 })();

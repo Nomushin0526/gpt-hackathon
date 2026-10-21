@@ -1,6 +1,7 @@
 """開催場所: 学内施設の位置、学外の場所検索、地図表示用の URL。"""
 
 import json
+import os
 import re
 import unicodedata
 import urllib.parse
@@ -104,6 +105,37 @@ def set_campus_pin(name, x, y):
         (name, round(x), round(y)),
     )
     db.commit()
+
+
+def pin_overrides():
+    """管理画面で修正したピン位置(初期値と違うものだけ)。[(name, 初期値, 修正後)]"""
+    overrides = _pin_overrides()
+    return [
+        (p["name"], p["pin"], tuple(int(round(v)) for v in overrides[p["name"]]))
+        for p in CAMPUS_PLACES
+        if p["name"] in overrides
+        and tuple(int(round(v)) for v in overrides[p["name"]]) != (tuple(p["pin"]) if p["pin"] else None)
+    ]
+
+
+def apply_pins_to_source(path=None):
+    """修正したピン位置を places.py の CAMPUS_PLACES に書き戻す。書き換えた施設名の一覧を返す。"""
+    path = path or os.path.abspath(__file__)
+    with open(path, encoding="utf-8") as f:
+        lines = f.read().split("\n")
+    changed = []
+    for name, _old, new in pin_overrides():
+        marker = f'dict(name="{name}",'
+        for i, line in enumerate(lines):
+            if marker in line:
+                updated = re.sub(r"pin=(\([^)]*\)|None)", f"pin=({new[0]}, {new[1]})", line, count=1)
+                if updated != line:
+                    lines[i] = updated
+                    changed.append(name)
+                break
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+    return changed
 
 
 def reset_campus_pin(name):
