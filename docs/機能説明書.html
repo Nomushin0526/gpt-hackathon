@@ -698,7 +698,7 @@ flowchart LR
         <li>「OAuth クライアント ID」(ウェブ アプリケーション)を作成し、リダイレクト URI に <code>http://127.0.0.1:5000/login/google/callback</code>(公開するならその URL のもの)を登録する。</li>
         <li>発行された値を <code>GOOGLE_CLIENT_ID</code> と <code>GOOGLE_CLIENT_SECRET</code> に設定して起動する。</li>
       </ol>
-      <div class="note warn"><strong>確認が必要</strong>大学の Google 管理者が外部アプリでのログインを制限している場合は、情報システムの担当部署への確認が必要です。本物の Google でのログインは、まだ試していません。</div>
+      <div class="note"><strong>動作確認済み</strong>実際の大学の Google アカウントで、学生のログインと学生課の担当者ログインの両方が動くことを確認しました。大学の Google 管理者が設定を変えて外部アプリでのログインを制限した場合は、情報システムの担当部署への確認が必要です。</div>
     </section>
 
     <!-- 09 -->
@@ -986,7 +986,6 @@ flask run</pre>
       <h3>確認が必要な事項</h3>
       <ul>
         <li>建物名のうち、「クレセント」の正式名称、「学生課」という部署名を実物で確認する。</li>
-        <li>Google Cloud でのログイン設定と、大学の Google 管理者による外部アプリの許可を確認する。</li>
         <li>Photon の公開サーバーは試用向け。本番では自前のサーバーや Google Places API などへの切り替えを検討する。</li>
         <li>閲覧履歴を Cookie で 90 日記録すること(個人は特定しない)を、発表や利用案内で説明しておく。</li>
       </ul>
